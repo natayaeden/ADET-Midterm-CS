@@ -1,67 +1,165 @@
-import React from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "bootstrap-icons/font/bootstrap-icons.css";
-import "./Dashboard.css";
+import React, { useState } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+import '../componentStyles/Dashboard.css';
 
 const Dashboard = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
   const handleLogout = () => {
     window.location.href = "/";
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
   return (
-    <div className="container-fluid">
-      {/* Navbar */}
-      <nav className="navbar navbar-dark bg-dark w-100">
-        <span className="navbar-brand fw-bold">Project Management System</span>
-        <button className="btn btn-danger" onClick={handleLogout}>
-          <i className="bi bi-box-arrow-right"></i> Logout
-        </button>
-      </nav>
-
-      {/* Main Content */}
-      <div className="container mt-4">
-        <h2 className="text-center fw-bold">Welcome to the Dashboard</h2>
-        <div className="row g-4">
-          <div className="col-md-4">
-            <div className="card shadow-sm p-3 text-center">
-              <h5><i className="bi bi-folder-check me-2"></i>Project Management</h5>
-              <p>Create and manage projects.</p>
-              <button className="btn btn-primary w-100">View Projects</button>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card shadow-sm p-3 text-center">
-              <h5><i className="bi bi-list-task me-2"></i>Task Assignment</h5>
-              <p>Assign and monitor tasks.</p>
-              <button className="btn btn-primary w-100">Manage Tasks</button>
-            </div>
-          </div>
-          <div className="col-md-4">
-            <div className="card shadow-sm p-3 text-center">
-              <h5><i className="bi bi-wallet2 me-2"></i>Budget Monitoring</h5>
-              <p>Track financials and project budgets.</p>
-              <button className="btn btn-primary w-100">View Budget</button>
-            </div>
-          </div>
+    <div className="dashboard-container">
+      {/* Sidebar */}
+      <div className={`sidebar ${isSidebarOpen ? 'open' : 'closed'}`}>
+        <div className="sidebar-header">
+          <span className="sidebar-brand">Klick Inc.</span>
         </div>
-
-        <div className="row g-4 mt-1">
-          <div className="col-md-6">
-            <div className="card shadow-sm p-3 text-center">
-              <h5><i className="bi bi-chat-dots me-2"></i>Team Communication</h5>
-              <p>Chat and collaborate with team members.</p>
-              <button className="btn btn-primary w-100">Open Chat</button>
-            </div>
-          </div>
-          <div className="col-md-6">
-            <div className="card shadow-sm p-3 text-center">
-              <h5><i className="bi bi-bar-chart me-2"></i>Reports</h5>
-              <p>Generate reports and insights.</p>
-              <button className="btn btn-primary w-100">View Reports</button>
-            </div>
-          </div>
+        <nav className="sidebar-nav">
+          <ul>
+            <li className="active">
+              <a href="#dashboard">
+                <i className="bi bi-grid"></i>
+                <span>Dashboard</span>
+              </a>
+            </li>
+            <li>
+              <a href="#projects">
+                <i className="bi bi-folder"></i>
+                <span>Projects</span>
+              </a>
+            </li>
+            <li>
+              <a href="#tasks">
+                <i className="bi bi-list-task"></i>
+                <span>Tasks</span>
+              </a>
+            </li>
+            <li>
+              <a href="#team">
+                <i className="bi bi-cash-stack"></i>
+                <span>Budget Tracker</span>
+              </a>
+            </li>
+            <li>
+              <a href="#reports">
+                <i className="bi bi-bar-chart"></i>
+                <span>Reports</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        <div className="sidebar-footer">
+          <button 
+            className="btn btn-logout"
+            onClick={handleLogout}
+          >
+            <i className="bi bi-box-arrow-left"></i>
+            <span>Sign Out</span>
+          </button>
         </div>
       </div>
+
+      {/* Main Content */}
+      <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+        <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+          <div className="container-fluid">
+            <button className="btn btn-icon me-3" onClick={toggleSidebar}>
+              <i className="bi bi-list"></i>
+            </button>
+            <span className="navbar-brand fw-bold">Project Management System</span>
+          </div>
+        </nav>
+
+        <div className="container-fluid p-4">
+          <h2 className="mb-4 fw-bold">Dashboard</h2>
+
+          {/* Project and Budget Cards */}
+          <div className="row g-4">
+            <div className="col-md-6">
+              <div className="card shadow-sm p-3">
+                <div className="d-flex align-items-center">
+                  <i className="bi bi-folder-check me-3 text-primary fs-3"></i>
+                  <h5 className="m-0">Total Projects</h5>
+                </div>
+                <h3 className="mt-2 fw-bold">24</h3>
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="card shadow-sm p-3">
+                <div className="d-flex align-items-center">
+                  <i className="bi bi-wallet2 me-3 text-success fs-3"></i>
+                  <h5 className="m-0">Budget Tracking</h5>
+                </div>
+                <h3 className="mt-2 fw-bold">₱50,000</h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Project Table */}
+          <div className="card mt-4 shadow-sm p-3">
+            <h4 className="fw-bold">Ongoing Projects</h4>
+            <table className="table table-bordered mt-3">
+              <thead className="table-light">
+                <tr>
+                  <th>Project</th>
+                  <th>Project Manager</th>
+                  <th>Timeline</th>
+                  <th>Status</th>
+                  <th>Due Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Website Redesign</td>
+                  <td>
+                    Obrey Monter
+                  </td>
+                  <td>
+                    <div className="progress">
+                      <div className="progress-bar bg-primary" style={{ width: "60%" }}></div>
+                    </div>
+                  </td>
+                  <td><span className="badge bg-success">Done</span></td>
+                  <td>April 10, 2025</td>
+                </tr>
+                <tr>
+                  <td>Mobile App Development</td>
+                  <td>
+                    Eden Nataya
+                  </td>
+                  <td>
+                    <div className="progress">
+                      <div className="progress-bar bg-warning" style={{ width: "40%" }}></div>
+                    </div>
+                  </td>
+                  <td><span className="badge bg-warning">In Progress</span></td>
+                  <td>April 10, 2025</td>
+                </tr>
+                <tr>
+                  <td>Marketing Campaign</td>
+                  <td>
+                    Niko Nositera
+                  </td>
+                  <td>
+                    <div className="progress">
+                      <div className="progress-bar bg-danger" style={{ width: "20%" }}></div>
+                    </div>
+                  </td>
+                  <td><span className="badge bg-danger">Stuck</span></td>
+                  <td>April 10, 2025</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
