@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./LoginStyles.css"; 
+import "../componentStyles/LoginStyles.css"; 
 
 const Login = () => {
 
