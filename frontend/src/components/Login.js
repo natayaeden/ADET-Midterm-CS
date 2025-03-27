@@ -13,44 +13,75 @@ const Login = () => {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
-    const [users, setUsers] = useState([{ email: "user@example.com", username: "user", password: "user123" }]);     //temporary authentication
     const navigate = useNavigate();
 
     // handles the login
-    const handleLogin = (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
-        const foundUser = users.find((user) => user.username === username && user.password === password);
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            });
 
-        if (foundUser) {
-            navigate("/dashboard");
-        } else {
-            setError("Invalid username or password!");
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('auth_token', data.token); // Store the token
+                navigate("/dashboard");
+            } else {
+                setError(data.message || "Invalid username or password!");
+            }
+        } catch (err) {
+            setError("An error occurred during login.");
         }
     };
 
     // handles the signup
-    const handleSignUp = (e) => {
+    const handleSignUp = async (e) => {
         e.preventDefault();
-
+    
         if (!email.includes("@")) {
             setError("Please enter a valid email address!");
             return;
         }
-
-        if (users.some((user) => user.username === username)) {
-            setError("Username already exists!");
-            return;
-        }
-
+    
         if (password !== confirmPassword) {
             setError("Passwords do not match!");
             return;
         }
-
-        setUsers([...users, { email, username, password }]);
-        setIsSignUp(false);
-        setError("");
-        alert("Sign-up successful! You can now log in.");
+    
+        try {
+            console.log(JSON.stringify({ email, username, password })); // Log the data being sent
+            const response = await fetch('http://127.0.0.1:8000/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, username, password }),
+            });
+    
+            console.log(response); // Log the full response
+    
+            const data = await response.json();
+    
+            console.log(data); // Log the parsed JSON data
+    
+            if (response.ok) {
+                localStorage.setItem('auth_token', data.token); //store the token
+                setIsSignUp(false);
+                setError("");
+                alert("Sign-up successful! You can now log in.");
+            } else {
+                setError(data.message || "Sign-up failed.");
+            }
+        } catch (err) {
+            console.error(err); // Log any JavaScript errors
+            setError("An error occurred during sign-up.");
+        }
     };
 
     // output display
