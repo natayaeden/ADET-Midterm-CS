@@ -16,6 +16,8 @@ return new class extends Migration {
             $table->enum('priority', ['Low', 'Medium', 'High'])->default('Medium');
             $table->enum('status', ['To Do', 'In Progress', 'Done'])->default('To Do');
             $table->timestamps();
+            // add budget
+            // assigned to specific user
         });
     }
 

@@ -18,7 +18,7 @@ const Login = () => {
     // handles the login
     const handleLogin = async (e) => {
         e.preventDefault();
-        console.log(username, password); // Debugging
+        console.log(username, password); 
     
         try {
             const response = await fetch('http://127.0.0.1:8000/api/login', {
@@ -26,11 +26,11 @@ const Login = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }), // Make sure these match backend fields
+                body: JSON.stringify({ username, password }), 
             });
     
             const data = await response.json();
-            console.log(data); // Debugging response
+            console.log(data); 
     
             if (response.ok) {
                 localStorage.setItem('auth_token', data.token);
@@ -59,7 +59,7 @@ const Login = () => {
         }
     
         try {
-            console.log(JSON.stringify({ email, username, password })); // Log the data being sent
+            console.log(JSON.stringify({ email, username, password })); 
             const response = await fetch('http://127.0.0.1:8000/api/register', {
                 method: 'POST',
                 headers: {
@@ -68,14 +68,14 @@ const Login = () => {
                 body: JSON.stringify({ email, username, password }),
             });
     
-            console.log(response); // Log the full response
+            console.log(response); 
     
             const data = await response.json();
     
-            console.log(data); // Log the parsed JSON data
+            console.log(data); 
     
             if (response.ok) {
-                localStorage.setItem('auth_token', data.token); //store the token
+                localStorage.setItem('auth_token', data.token); 
                 setIsSignUp(false);
                 setError("");
                 alert("Sign-up successful! You can now log in.");
@@ -83,7 +83,7 @@ const Login = () => {
                 setError(data.message || "Sign-up failed.");
             }
         } catch (err) {
-            console.error(err); // Log any JavaScript errors
+            console.error(err);
             setError("An error occurred during sign-up.");
         }
     };
