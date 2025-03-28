@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
+    // ✅ REGISTER FUNCTION
     public function register(Request $request)
     {
         $request->validate([
@@ -23,24 +24,52 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        // Direct JSON response (not recommended for security)
-        return response()->json(['message' => 'User registered successfully', 'user' => $user], 201);
+        return response()->json([
+            'message' => 'User registered successfully',
+            'user' => $user
+        ], 201);
     }
 
+    // ✅ LOGIN FUNCTION
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'username' => 'required',
-            'password' => 'required',
-        ]);
+        try {
+            // Validate request
+            $request->validate([
+                'username' => 'required|string',
+                'password' => 'required|string',
+            ]);
 
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
+            // Find user by username
+            $user = User::where('username', $request->username)->first();
 
-            // Direct JSON response (not recommended for security)
-            return response()->json(['message' => 'Login successful', 'user' => $user], 200);
+            if (!$user) {
+                return response()->json(['message' => 'User not found'], 404);
+            }
+
+            // Check password
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json(['message' => 'Incorrect password'], 401);
+            }
+
+            // ✅ Generate API token (Sanctum)
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Login successful',
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
 
-        return response()->json(['message' => 'Invalid credentials'], 401);
+    // ✅ LOGOUT FUNCTION
+    public function logout(Request $request)
+    {
+        $request->user()->tokens()->delete();
+        return response()->json(['message' => 'Logged out successfully'], 200);
     }
 }

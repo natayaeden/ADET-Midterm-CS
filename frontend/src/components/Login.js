@@ -18,19 +18,22 @@ const Login = () => {
     // handles the login
     const handleLogin = async (e) => {
         e.preventDefault();
+        console.log(username, password); // Debugging
+    
         try {
             const response = await fetch('http://127.0.0.1:8000/api/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ username, password }), // Make sure these match backend fields
             });
-
+    
             const data = await response.json();
-
+            console.log(data); // Debugging response
+    
             if (response.ok) {
-                localStorage.setItem('auth_token', data.token); // Store the token
+                localStorage.setItem('auth_token', data.token);
                 navigate("/dashboard");
             } else {
                 setError(data.message || "Invalid username or password!");
@@ -39,6 +42,7 @@ const Login = () => {
             setError("An error occurred during login.");
         }
     };
+    
 
     // handles the signup
     const handleSignUp = async (e) => {
