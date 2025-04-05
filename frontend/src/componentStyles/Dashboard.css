@@ -106,6 +106,38 @@
     color: #313745;
 }
 
+.notification-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: red;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 50%;
+  }
+  
+  .notification-popup {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 300px;
+    background-color: white;
+    border-radius: 0.5rem;
+    z-index: 1000;
+  }
+  
+  .notification-header {
+    border-bottom: 1px solid #eee;
+    background-color: #f8f9fa;
+    padding: 0.5rem 1rem;
+  }
+  
+  .list-group-item {
+    font-size: 0.9rem;
+  }
+  
+
 
 /* main content */
 .main-content {

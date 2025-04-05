@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import '../componentStyles/Dashboard.css';
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showNotification, setShowNotification] = useState(false);
+  const notificationRef = useRef(null);
 
   const handleLogout = () => {
     window.location.href = "/";
@@ -13,6 +16,23 @@ const Dashboard = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  const toggleNotification = () => {
+    setShowNotification(!showNotification);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setShowNotification(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="dashboard-container">
@@ -30,7 +50,7 @@ const Dashboard = () => {
               </a>
             </li>
             <li>
-              <a href="#projects">
+              <a href="/projects">
                 <i className="bi bi-folder"></i>
                 <span>Projects</span>
               </a>
@@ -56,10 +76,7 @@ const Dashboard = () => {
           </ul>
         </nav>
         <div className="sidebar-footer">
-          <button 
-            className="btn btn-logout"
-            onClick={handleLogout}
-          >
+          <button className="btn btn-logout" onClick={handleLogout}>
             <i className="bi bi-box-arrow-left"></i>
             <span>Sign Out</span>
           </button>
@@ -68,12 +85,33 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className={`main-content ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+
+        {/* navigation bar */}
+        <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm position-relative">
           <div className="container-fluid">
             <button className="btn btn-icon me-3" onClick={toggleSidebar}>
               <i className="bi bi-list"></i>
             </button>
-            <span className="navbar-brand fw-bold">Project Management System</span>
+
+            {/* Notification Icon */}
+            <div className="ms-auto position-relative" ref={notificationRef}>
+              <button className="btn btn-icon position-relative" onClick={toggleNotification}>
+                <i className="bi bi-bell fs-5"></i>
+                <span className="notification-badge">3</span>
+              </button>
+
+              {/* notification default for design */}
+              {showNotification && (
+                <div className="notification-popup shadow-sm">
+                  <div className="notification-header fw-bold px-3 pt-2">Notifications</div>
+                  <ul className="list-group list-group-flush">
+                    <li className="list-group-item">You have a new message</li>
+                    <li className="list-group-item">Project deadline tomorrow</li>
+                    <li className="list-group-item">System update available</li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         </nav>
 
@@ -118,9 +156,7 @@ const Dashboard = () => {
               <tbody>
                 <tr>
                   <td>Website Redesign</td>
-                  <td>
-                    Obrey Monter
-                  </td>
+                  <td>Obrey Monter</td>
                   <td>
                     <div className="progress">
                       <div className="progress-bar bg-primary" style={{ width: "60%" }}></div>
@@ -131,9 +167,7 @@ const Dashboard = () => {
                 </tr>
                 <tr>
                   <td>Mobile App Development</td>
-                  <td>
-                    Eden Nataya
-                  </td>
+                  <td>Eden Nataya</td>
                   <td>
                     <div className="progress">
                       <div className="progress-bar bg-warning" style={{ width: "40%" }}></div>
@@ -144,9 +178,7 @@ const Dashboard = () => {
                 </tr>
                 <tr>
                   <td>Marketing Campaign</td>
-                  <td>
-                    Niko Nositera
-                  </td>
+                  <td>Niko Nositera</td>
                   <td>
                     <div className="progress">
                       <div className="progress-bar bg-danger" style={{ width: "20%" }}></div>

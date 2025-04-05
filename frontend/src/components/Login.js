@@ -44,49 +44,6 @@ const Login = () => {
     };
     
 
-    // handles the signup
-    const handleSignUp = async (e) => {
-        e.preventDefault();
-    
-        if (!email.includes("@")) {
-            setError("Please enter a valid email address!");
-            return;
-        }
-    
-        if (password !== confirmPassword) {
-            setError("Passwords do not match!");
-            return;
-        }
-    
-        try {
-            console.log(JSON.stringify({ email, username, password })); 
-            const response = await fetch('http://127.0.0.1:8000/api/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email, username, password }),
-            });
-    
-            console.log(response); 
-    
-            const data = await response.json();
-    
-            console.log(data); 
-    
-            if (response.ok) {
-                localStorage.setItem('auth_token', data.token); 
-                setIsSignUp(false);
-                setError("");
-                alert("Sign-up successful! You can now log in.");
-            } else {
-                setError(data.message || "Sign-up failed.");
-            }
-        } catch (err) {
-            console.error(err);
-            setError("An error occurred during sign-up.");
-        }
-    };
 
     // output display
     return (
@@ -112,6 +69,7 @@ const Login = () => {
 
                     {/* Right side: Form */}
                     <div className="col-md-6 p-4">
+                        <h3 className="text-center mb-3">Klick Inc.</h3>
                         <h3 className="text-center mb-3">{isSignUp ? "Sign Up" : "Welcome Back!"}</h3>
 
                         {error && <motion.div className="alert alert-danger" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
@@ -135,37 +93,6 @@ const Login = () => {
                             </motion.div>
                         )}
 
-                        {/* Sign-Up Form */}
-                        {isSignUp && (
-                            <motion.div className="form-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}>
-                                <form onSubmit={handleSignUp}>
-                                    <div className="mb-3">
-                                        <label className="form-label">Email</label>
-                                        <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Username</label>
-                                        <input type="text" className="form-control" value={username} onChange={(e) => setUsername(e.target.value)} required />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Password</label>
-                                        <input type="password" className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="form-label">Confirm Password</label>
-                                        <input type="password" className="form-control" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-                                    </div>
-                                    <button type="submit" className="btn btn-primary w-100">Sign Up</button>
-                                </form>
-                            </motion.div>
-                        )}
-
-                        <p className="text-center mt-3">
-                            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-                            <button className="btn btn-link toggle-btn" onClick={() => { setIsSignUp(!isSignUp); setError(""); }}>
-                                {isSignUp ? "Login here" : "Sign up"}
-                            </button>
-                        </p>
                     </div>
                 </div>
             </motion.div>
