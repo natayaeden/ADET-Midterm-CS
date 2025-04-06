@@ -42,6 +42,7 @@ const Login = () => {
             setError("An error occurred during login.");
         }
     };
+    
 
     // handles the signup
     const handleSignUp = async (e) => {
