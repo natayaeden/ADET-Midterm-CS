@@ -56,6 +56,7 @@ const Layout = () => {
                     </Link>
                 </li>
 
+
                 <li className={location.pathname === "/budget" ? "active" : ""}>
                     <Link to="/budget">
                         <i className="bi bi-cash-stack"></i><span>Budget Tracker</span>
