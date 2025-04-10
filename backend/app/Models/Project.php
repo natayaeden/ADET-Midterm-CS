@@ -13,6 +13,9 @@ class Project extends Model
         'user_id',
         'name',
         'description',
+        'project_manager',
+        'timeline',
+        'project_budget',
         'status',
         'due_date'
     ];

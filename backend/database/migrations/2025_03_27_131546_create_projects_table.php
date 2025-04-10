@@ -10,10 +10,11 @@ return new class extends Migration {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('project_manager');
             $table->text('description')->nullable();
+            $table->string('project_manager');
             $table->integer('timeline')->default(0); // Progress percentage
-            $table->enum('status', ['Done', 'In Progress', 'Stuck'])->default('In Progress');
+            $table->decimal('project_budget', 12, 2)->nullable();
+            $table->enum('status', ['In Queue', 'To Do', 'In Progress', 'Completed'])->default('In Queue');
             $table->date('due_date');
             $table->timestamps();
         });

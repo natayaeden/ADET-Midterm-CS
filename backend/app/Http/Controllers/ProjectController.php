@@ -24,14 +24,20 @@ class ProjectController extends Controller
             $validated = $request->validate([
                 'name' => 'required|string|max:255',
                 'description' => 'required|string',
-                'status' => 'required|in:Not Started,In Progress,Completed',
-                'due_date' => 'required|date'
+                'project_manager' => 'nullable|string|max:255',
+                'timeline' => 'nullable|integer|min:0|max:100',
+                'project_budget' => 'nullable|numeric|min:0',
+                'status' => 'required|in:In Queue,To Do,In Progress,Completed',
+                'due_date' => 'required|date',
             ]);
 
             $project = Project::create([
                 'user_id' => Auth::id(),
                 'name' => $validated['name'],
                 'description' => $validated['description'],
+                'project_manager' => $validated['project_manager'] ?? null,
+                'timeline' => $validated['timeline'] ?? 0,
+                'project_budget' => $validated['project_budget'] ?? null,
                 'status' => $validated['status'],
                 'due_date' => $validated['due_date']
             ]);
@@ -58,10 +64,13 @@ class ProjectController extends Controller
             $project = Project::where('user_id', Auth::id())->findOrFail($id);
 
             $validated = $request->validate([
-                'name' => 'string|max:255',
-                'description' => 'string',
-                'status' => 'in:Not Started,In Progress,Completed',
-                'due_date' => 'date'
+                'name' => 'nullable|string|max:255',
+                'description' => 'nullable|string|max:1000',
+                'project_manager' => 'nullable|string|max:255',
+                'timeline' => 'nullable|integer|min:0|max:100',
+                'project_budget' => 'nullable|numeric|min:0',
+                'status' => 'nullable|in:In Queue,To Do,In Progress,Completed',
+                'due_date' => 'nullable|date'
             ]);
 
             $project->update($validated);
