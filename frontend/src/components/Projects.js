@@ -10,12 +10,14 @@ const Projects = ({ onProjectSelect }) => {
   const [currentProject, setCurrentProject] = useState({
     id: null,
     name: '',
-    manager: '',
-    status: 'Not Started',
-    dueDate: ''
+    description: '',
+    project_manager: '',
+    timeline: 0,
+    project_budget: '',
+    status: 'In Queue',
+    due_date: ''
   });
 
-  // Load projects from localStorage on component mount
   useEffect(() => {
     const storedProjects = localStorage.getItem('projects');
     if (storedProjects) {
@@ -23,7 +25,6 @@ const Projects = ({ onProjectSelect }) => {
     }
   }, []);
 
-  // Save projects to localStorage whenever they change
   useEffect(() => {
     if (projects.length > 0) {
       localStorage.setItem('projects', JSON.stringify(projects));
@@ -36,41 +37,37 @@ const Projects = ({ onProjectSelect }) => {
     setCurrentProject({
       id: null,
       name: '',
-      manager: '',
-      status: 'Not Started',
-      dueDate: ''
+      description: '',
+      project_manager: '',
+      timeline: 0,
+      project_budget: '',
+      status: 'In Queue',
+      due_date: ''
     });
   };
 
-  const handleShowModal = () => {
-    setShowModal(true);
-  };
+  const handleShowModal = () => setShowModal(true);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCurrentProject({
-      ...currentProject,
-      [name]: value
-    });
+    setCurrentProject((prev) => ({
+      ...prev,
+      [name]: name === 'timeline' || name === 'project_budget' ? Number(value) : value
+    }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const updatedProject = {
+      ...currentProject,
+      id: editMode ? currentProject.id : Date.now()
+    };
+
     if (editMode) {
-      // Update existing project
-      setProjects(
-        projects.map((project) =>
-          project.id === currentProject.id ? currentProject : project
-        )
-      );
+      setProjects(projects.map((project) => project.id === currentProject.id ? updatedProject : project));
     } else {
-      // Add new project
-      const newProject = {
-        ...currentProject,
-        id: Date.now() // Unique ID based on the timestamp
-      };
-      setProjects([...projects, newProject]);
+      setProjects([...projects, updatedProject]);
     }
 
     handleCloseModal();
@@ -112,9 +109,10 @@ const Projects = ({ onProjectSelect }) => {
           <table className="table table-hover">
             <thead className="table-light">
               <tr>
-                <th>Project Name</th>
-                <th>Project Manager</th>
+                <th>Name</th>
+                <th>Manager</th>
                 <th>Status</th>
+                <th>Budget</th>
                 <th>Due Date</th>
                 <th>Actions</th>
               </tr>
@@ -127,13 +125,14 @@ const Projects = ({ onProjectSelect }) => {
                   className="project-row"
                 >
                   <td>{project.name}</td>
-                  <td>{project.manager}</td>
+                  <td>{project.project_manager}</td>
                   <td>
                     <span className={`badge ${getStatusBadgeClass(project.status)}`}>
                       {project.status}
                     </span>
                   </td>
-                  <td>{formatDate(project.dueDate)}</td>
+                  <td>₱{parseFloat(project.project_budget).toLocaleString()}</td>
+                  <td>{formatDate(project.due_date)}</td>
                   <td>
                     <div className="actions-container" onClick={(e) => e.stopPropagation()}>
                       <Button
@@ -166,62 +165,119 @@ const Projects = ({ onProjectSelect }) => {
         </div>
       )}
 
-      <Modal show={showModal} onHide={handleCloseModal}>
+      <Modal show={showModal} onHide={handleCloseModal} size='lg' centered>
         <Modal.Header closeButton>
           <Modal.Title>{editMode ? 'Edit Project' : 'Create New Project'}</Modal.Title>
         </Modal.Header>
+
         <Modal.Body>
           <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Project Name</Form.Label>
-              <Form.Control
-                type="text"
-                name="name"
-                value={currentProject.name}
-                onChange={handleInputChange}
-                placeholder="Enter project name"
-                required
-              />
-            </Form.Group>
+            <div className="row">
+              {/* Project Name */}
+              <div className="col-md-6 mb-3">
+                <Form.Group>
+                  <Form.Label>Project Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="name"
+                    value={currentProject.name}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Form.Group>
+              </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Project Manager</Form.Label>
-              <Form.Control
-                type="text"
-                name="manager"
-                value={currentProject.manager}
-                onChange={handleInputChange}
-                placeholder="Enter project manager name"
-                required
-              />
-            </Form.Group>
+              {/* Project Manager */}
+              <div className="col-md-6 mb-3">
+                <Form.Group>
+                  <Form.Label>Project Manager</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="project_manager"
+                    value={currentProject.project_manager}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Form.Group>
+              </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Status</Form.Label>
-              <Form.Select
-                name="status"
-                value={currentProject.status}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="Not Started">Not Started</option>
-                <option value="In Progress">In Progress</option>
-                <option value="On Hold">On Hold</option>
-                <option value="Completed">Completed</option>
-              </Form.Select>
-            </Form.Group>
+              {/* Description - full width */}
+              <div className="col-12 mb-3">
+                <Form.Group>
+                  <Form.Label>Description</Form.Label>
+                  <Form.Control
+                    as="textarea"
+                    rows={2}
+                    name="description"
+                    value={currentProject.description}
+                    onChange={handleInputChange}
+                  />
+                </Form.Group>
+              </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Due Date</Form.Label>
-              <Form.Control
-                type="date"
-                name="dueDate"
-                value={currentProject.dueDate}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
+              {/* Timeline */}
+              <div className="col-md-6 mb-3">
+                <Form.Group>
+                  <Form.Label>Timeline (%)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="timeline"
+                    min="0"
+                    max="100"
+                    value={currentProject.timeline}
+                    onChange={handleInputChange}
+                  />
+                </Form.Group>
+              </div>
 
+              {/* Budget */}
+              <div className="col-md-6 mb-3">
+                <Form.Group>
+                  <Form.Label>Budget (₱)</Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    name="project_budget"
+                    value={currentProject.project_budget}
+                    onChange={handleInputChange}
+                  />
+                </Form.Group>
+              </div>
+
+              {/* Status */}
+              <div className="col-md-6 mb-3">
+                <Form.Group>
+                  <Form.Label>Status</Form.Label>
+                  <Form.Select
+                    name="status"
+                    value={currentProject.status}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="In Queue">In Queue</option>
+                    <option value="To Do">To Do</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                  </Form.Select>
+                </Form.Group>
+              </div>
+
+              {/* Due Date */}
+              <div className="col-md-6 mb-3">
+                <Form.Group>
+                  <Form.Label>Due Date</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="due_date"
+                    value={currentProject.due_date}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </Form.Group>
+              </div>
+            </div>
+
+            {/* Buttons */}
             <div className="d-flex justify-content-end">
               <Button variant="secondary" className="me-2" onClick={handleCloseModal}>
                 Cancel
@@ -232,20 +288,20 @@ const Projects = ({ onProjectSelect }) => {
             </div>
           </Form>
         </Modal.Body>
+
       </Modal>
     </div>
   );
 };
 
-// Helper functions
 const getStatusBadgeClass = (status) => {
   switch (status) {
-    case 'Not Started':
+    case 'In Queue':
       return 'bg-secondary';
+    case 'To Do':
+      return 'bg-info';
     case 'In Progress':
       return 'bg-primary';
-    case 'On Hold':
-      return 'bg-warning';
     case 'Completed':
       return 'bg-success';
     default:
@@ -255,7 +311,6 @@ const getStatusBadgeClass = (status) => {
 
 const formatDate = (dateString) => {
   if (!dateString) return '';
-  
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
