@@ -10,14 +10,14 @@ return new class extends Migration {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->constrained()->onDelete('cascade');
-            $table->string('title');
+            $table->string('title')->nullable();
             $table->text('description')->nullable();
-            $table->date('due_date');
+            $table->string('assigned_to')->nullable(); 
+            $table->decimal('task_budget', 10, 2)->nullable();
+            $table->date('due_date')->nullable();
             $table->enum('priority', ['High', 'Medium', 'Low'])->default('Medium');
             $table->enum('status', ['To Do', 'In Progress', 'Done'])->default('To Do');
             $table->timestamps();
-            // add budget
-            // assigned to specific user
         });
     }
 

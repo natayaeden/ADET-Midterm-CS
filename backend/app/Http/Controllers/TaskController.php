@@ -37,9 +37,11 @@ class TaskController extends Controller
                 'project_id' => $projectId,
                 'title' => $validated['title'],
                 'description' => $validated['description'],
+                'assigned_to' => $request->input('assigned_to'),
+                'task_budget' => 'nullable|numeric|min:0',
+                'due_date' => $validated['due_date'],
                 'priority' => $validated['priority'],
-                'status' => $validated['status'],
-                'due_date' => $validated['due_date']
+                'status' => $validated['status']
             ]);
 
             return response()->json(['message' => 'Task created successfully', 'task' => $task], 201);
@@ -68,9 +70,11 @@ class TaskController extends Controller
             $validated = $request->validate([
                 'title' => 'string|max:255',
                 'description' => 'string',
+                'assigned_to' => 'string|max:255',
+                'task_budget' => 'nullable|numeric|min:0',
+                'due_date' => 'date',
                 'priority' => 'in:High,Medium,Low',
-                'status' => 'in:To Do,In Progress,Done',
-                'due_date' => 'date'
+                'status' => 'in:To Do,In Progress,Done'
             ]);
 
             $task->update($validated);
