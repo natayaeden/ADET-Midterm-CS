@@ -203,228 +203,243 @@ const Tasks = () => {
     if (!project) return null;
 
     return (
-        <div className="tasks-container">
-            {/* Enhanced Project Header */}
-            <div className="project-header mb-4">
-                <div className="card w-100">
-                    <div className="card-header d-flex justify-content-between align-items-center">
-                        <div>
-                            <Button className="backbutton" variant="outline-secondary" onClick={() => navigate('/projects')}>
-                                ← Back to Projects
-                            </Button>
+        <>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <Button
+                        className="btn btn-outline-secondary btn-md"
+                        style={{ backgroundColor: 'transparent', border: '1px solid #ccc' }}
+                        onClick={() => navigate('/projects')}
+                    >
+                        ← Back to Projects
+                    </Button>
+                </div>
+                <div>
+                    <Button
+                        className="btn btn-primary btn-md"
+                        onClick={handleShowModal}
+                    >
+                        <i className="bi bi-plus-circle me-2"></i>Add Task
+                    </Button>
+                </div>
+            </div>
+
+            <div className="tasks-container">       
+
+                {/* Enhanced Project Header */}
+                <div className="project-header mb-4">
+                    <div className="card w-100">
+                        <div className="card-header d-flex justify-content-center align-items-center text-center">
+                            <h2 className="mb-0">{project.name}</h2>
                         </div>
-                        <h2 className="mb-0">{project.name}</h2>
-                        <Button variant="primary" onClick={handleShowModal}>
-                            <i className="bi bi-plus-circle me-2"></i>Add Task
-                        </Button>
-                    </div>
-                    <div className="card-body">
-                        <div className="row">
-                            <div className="col-md-8">
-                                <h5 className="card-title">Project Details</h5>
-                                <p className="card-text">{project.description}</p>
-                            </div>
-                            <div className="col-md-4">
-                                <div className="project-meta-details">
-                                    <p>
-                                        <strong>Project Manager:</strong> {project.project_manager || project.manager || "Not assigned"}
-                                    </p>
-                                    <p>
-                                        <strong>Status:</strong> <Badge className={getStatusBadgeClass(project.status)}>{project.status}</Badge>
-                                    </p>
-                                    <p>
-                                        <strong>Timeline:</strong> {formatDate(project.start_date || project.startDate)} - {formatDate(project.due_date || project.dueDate)}
-                                    </p>
-                                    <p>
-                                        <strong>Budget:</strong> {formatCurrency(project.project_budget || project.budget)}
-                                    </p>
+                        <div className="card-body">
+                            <div className="row">
+                                <div className="col-md-7">
+                                    <h5 className="card-title">Project Details</h5>
+                                    <p className="card-text">{project.description}</p>
+                                </div>
+                                <div className="col-md-5">
+                                    <div className="project-meta-details">
+                                        <p>
+                                            <strong>Project Manager:</strong> {project.project_manager || project.manager || "Not assigned"}
+                                        </p>
+                                        <p>
+                                            <strong>Duration:</strong> {formatDate(project.start_date || project.startDate)} - {formatDate(project.due_date || project.dueDate)}
+                                        </p>
+                                        <p>
+                                            <strong>Budget:</strong> {formatCurrency(project.project_budget || project.budget)}
+                                        </p>
+                                        <p>
+                                            <strong>Status:</strong> <Badge className={getStatusBadgeClass(project.status)}>{project.status}</Badge>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {tasks.length === 0 ? (
-                <div className="no-tasks">
-                    <p>No tasks found for this project. Add your first task to get started!</p>
-                </div>
-            ) : (
-                <div className="table-responsive">
-                    <table className="table table-hover">
-                        <thead className="table-light">
-                            <tr>
-                                <th>Task Title</th>
-                                <th>Assignee</th>
-                                <th>Priority</th>
-                                <th>Status</th>
-                                <th>Due Date</th>
-                                <th>Budget</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {tasks.map((task) => (
-                                <tr key={task.id} className="task-row" onClick={() => handleTaskClick(task)}>
-                                    <td>
-                                        <div className="task-name">{task.title}</div>
-                                        <div className="task-description text-muted">{task.description}</div>
-                                    </td>
-                                    <td>{task.assigned_to}</td>
-                                    <td>
-                                        <span className={`priority-badge ${getPriorityBadgeClass(task.priority)}`}>
-                                            {task.priority}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span className={`status-pill ${getTaskStatusClass(task.status)}`}>
-                                            {task.status}
-                                        </span>
-                                    </td>
-                                    <td>{formatDate(task.due_date)}</td>
-                                    <td>{formatCurrency(task.task_budget)}</td>
-                                    <td>
-                                        <div className="actions-container">
-                                            <Button
-                                                variant="outline-secondary"
-                                                size="sm"
-                                                className="me-2"
-                                                onClick={(e) => handleEdit(task, e)}
-                                            >
-                                                <i className="bi bi-pencil"></i>
-                                            </Button>
-                                            <Button
-                                                variant="outline-danger"
-                                                size="sm"
-                                                onClick={(e) => handleDelete(task.id, e)}
-                                            >
-                                                <i className="bi bi-trash"></i>
-                                            </Button>
-                                        </div>
-                                    </td>
+                {tasks.length === 0 ? (
+                    <div className="no-tasks">
+                        <p>No tasks found for this project. Add your first task to get started!</p>
+                    </div>
+                ) : (
+                    <div className="table-responsive">
+                        <table className="table table-hover">
+                            <thead className="table-light">
+                                <tr>
+                                    <th>Task Title</th>
+                                    <th>Assignee</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Due Date</th>
+                                    <th>Budget</th>
+                                    <th>Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+                            </thead>
+                            <tbody>
+                                {tasks.map((task) => (
+                                    <tr key={task.id} className="task-row" onClick={() => handleTaskClick(task)}>
+                                        <td>
+                                            <div className="task-name">{task.title}</div>
+                                            <div className="task-description text-muted">{task.description}</div>
+                                        </td>
+                                        <td>{task.assigned_to}</td>
+                                        <td>
+                                            <span className={`priority-badge ${getPriorityBadgeClass(task.priority)}`}>
+                                                {task.priority}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span className={`status-pill ${getTaskStatusClass(task.status)}`}>
+                                                {task.status}
+                                            </span>
+                                        </td>
+                                        <td>{formatDate(task.due_date)}</td>
+                                        <td>{formatCurrency(task.task_budget)}</td>
+                                        <td>
+                                            <div className="actions-container">
+                                                <Button
+                                                    variant="outline-secondary"
+                                                    size="sm"
+                                                    className="me-2"
+                                                    onClick={(e) => handleEdit(task, e)}
+                                                >
+                                                    <i className="bi bi-pencil"></i>
+                                                </Button>
+                                                <Button
+                                                    variant="outline-danger"
+                                                    size="sm"
+                                                    onClick={(e) => handleDelete(task.id, e)}
+                                                >
+                                                    <i className="bi bi-trash"></i>
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
-            <Modal show={showModal} onHide={handleCloseModal} size="lg">
-                <Modal.Header closeButton>
-                    <Modal.Title>{editMode ? 'Edit Task' : 'Create New Task'}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Form onSubmit={handleSubmit}>
-                        <Form.Group className="mb-3">
-                            <Form.Label>Task Title</Form.Label>
-                            <Form.Control
-                                type="text"
-                                name="title"
-                                value={currentTask.title}
-                                onChange={handleInputChange}
-                                placeholder="Enter task title"
-                                required
-                            />
-                        </Form.Group>
+                <Modal show={showModal} onHide={handleCloseModal} size="lg">
+                    <Modal.Header closeButton>
+                        <Modal.Title>{editMode ? 'Edit Task' : 'Create New Task'}</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <Form onSubmit={handleSubmit}>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Task Title</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    name="title"
+                                    value={currentTask.title}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter task title"
+                                    required
+                                />
+                            </Form.Group>
 
-                        <Form.Group className="mb-3">
-                            <Form.Label>Description</Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                rows={3}
-                                name="description"
-                                value={currentTask.description}
-                                onChange={handleInputChange}
-                                placeholder="Enter task description"
-                            />
-                        </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Description</Form.Label>
+                                <Form.Control
+                                    as="textarea"
+                                    rows={3}
+                                    name="description"
+                                    value={currentTask.description}
+                                    onChange={handleInputChange}
+                                    placeholder="Enter task description"
+                                />
+                            </Form.Group>
 
-                        <div className="row">
-                            <div className="col-md-6">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Assignee</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="assigned_to"
-                                        value={currentTask.assigned_to}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter assignee name"
-                                        required
-                                    />
-                                </Form.Group>
+                            <div className="row">
+                                <div className="col-md-6">
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Assignee</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            name="assigned_to"
+                                            value={currentTask.assigned_to}
+                                            onChange={handleInputChange}
+                                            placeholder="Enter assignee name"
+                                            required
+                                        />
+                                    </Form.Group>
+                                </div>
+                                <div className="col-md-6">
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Priority</Form.Label>
+                                        <Form.Select
+                                            name="priority"
+                                            value={currentTask.priority}
+                                            onChange={handleInputChange}
+                                            required
+                                        >
+                                            <option value="Low">Low</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="High">High</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </div>
                             </div>
-                            <div className="col-md-6">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Priority</Form.Label>
-                                    <Form.Select
-                                        name="priority"
-                                        value={currentTask.priority}
-                                        onChange={handleInputChange}
-                                        required
-                                    >
-                                        <option value="Low">Low</option>
-                                        <option value="Medium">Medium</option>
-                                        <option value="High">High</option>
-                                    </Form.Select>
-                                </Form.Group>
-                            </div>
-                        </div>
 
-                        <div className="row">
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Status</Form.Label>
-                                    <Form.Select
-                                        name="status"
-                                        value={currentTask.status}
-                                        onChange={handleInputChange}
-                                        required
-                                    >
-                                        <option value="To Do">To Do</option>
-                                        <option value="In Progress">In Progress</option>
-                                        <option value="Done">Done</option>
-                                    </Form.Select>
-                                </Form.Group>
+                            <div className="row">
+                                <div className="col-md-4">
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Status</Form.Label>
+                                        <Form.Select
+                                            name="status"
+                                            value={currentTask.status}
+                                            onChange={handleInputChange}
+                                            required
+                                        >
+                                            <option value="To Do">To Do</option>
+                                            <option value="In Progress">In Progress</option>
+                                            <option value="Done">Done</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </div>
+                                <div className="col-md-4">
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Due Date</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            name="due_date"
+                                            value={currentTask.due_date}
+                                            onChange={handleInputChange}
+                                            required
+                                        />
+                                    </Form.Group>
+                                </div>
+                                <div className="col-md-4">
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Budget</Form.Label>
+                                        <Form.Control
+                                            type="number"
+                                            name="task_budget"
+                                            value={currentTask.task_budget}
+                                            onChange={handleInputChange}
+                                            placeholder="Enter budget amount"
+                                            required
+                                        />
+                                    </Form.Group>
+                                </div>
                             </div>
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Due Date</Form.Label>
-                                    <Form.Control
-                                        type="date"
-                                        name="due_date"
-                                        value={currentTask.due_date}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </Form.Group>
-                            </div>
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Budget</Form.Label>
-                                    <Form.Control
-                                        type="number"
-                                        name="task_budget"
-                                        value={currentTask.task_budget}
-                                        onChange={handleInputChange}
-                                        placeholder="Enter budget amount"
-                                        required
-                                    />
-                                </Form.Group>
-                            </div>
-                        </div>
 
-                        <div className="d-flex justify-content-end">
-                            <Button variant="secondary" className="me-2" onClick={handleCloseModal}>
-                                Close
-                            </Button>
-                            <Button variant="primary" type="submit">
-                                {editMode ? 'Update Task' : 'Add Task'}
-                            </Button>
-                        </div>
-                    </Form>
-                </Modal.Body>
-            </Modal>
-        </div>
+                            <div className="d-flex justify-content-end">
+                                <Button variant="secondary" className="me-2" onClick={handleCloseModal}>
+                                    Close
+                                </Button>
+                                <Button variant="primary" type="submit">
+                                    {editMode ? 'Update Task' : 'Add Task'}
+                                </Button>
+                            </div>
+                        </Form>
+                    </Modal.Body>
+                </Modal>
+            </div>
+        </>
     );
 };
 
