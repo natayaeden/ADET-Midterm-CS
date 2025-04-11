@@ -49,22 +49,22 @@ const Layout = () => {
                         <i className="bi bi-folder"></i><span>Projects</span>
                     </Link>
                 </li>
-
+{/* 
                 <li className={location.pathname === "/tasks" ? "active" : ""}>
-                    <Link to="/tasks">
+                    <Link to="#">
                         <i className="bi bi-list-task"></i><span>Tasks</span>
                     </Link>
-                </li>
+                </li> */}
 
 
                 <li className={location.pathname === "/budget" ? "active" : ""}>
-                    <Link to="/budget">
+                    <Link to="#">
                         <i className="bi bi-cash-stack"></i><span>Budget Tracker</span>
                     </Link>
                 </li>
 
                 <li className={location.pathname === "/reports" ? "active" : ""}>
-                    <Link to="/reports">
+                    <Link to="#">
                         <i className="bi bi-bar-chart"></i><span>Reports</span>
                     </Link>
                 </li>

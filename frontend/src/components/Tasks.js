@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Badge } from 'react-bootstrap';
+import { getStatusBadgeClass } from './Projects';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../componentStyles/Tasks.css';
 
@@ -159,8 +160,12 @@ const Tasks = () => {
 
     const getStatusBadgeClass = (status) => {
         switch (status) {
+            case 'In Queue':
+                return 'bg-secondary';
             case 'Not Started':
                 return 'bg-secondary';
+            case 'To Do':
+                return 'bg-info';
             case 'In Progress':
                 return 'bg-primary';
             case 'On Hold':
@@ -250,7 +255,7 @@ const Tasks = () => {
                                             <strong>Budget:</strong> {formatCurrency(project.project_budget || project.budget)}
                                         </p>
                                         <p>
-                                            <strong>Status:</strong> <Badge className={getStatusBadgeClass(project.status)}>{project.status}</Badge>
+                                            <strong>Status:</strong> <Badge className={getStatusBadgeClass(project.status)}> {project.status} </Badge>
                                         </p>
                                     </div>
                                 </div>

@@ -262,7 +262,7 @@ const Projects = ({ onProjectSelect }) => {
                 </Form.Group>
               </div>
 
-              {/* Date Created */}
+              {/* Date Start */}
               <div className="col-md-6 mb-3">
                 <Form.Group>
                   <Form.Label>Date Started</Form.Label>
@@ -271,7 +271,7 @@ const Projects = ({ onProjectSelect }) => {
                     name="start_date"
                     value={currentProject.start_date}
                     onChange={handleInputChange}
-                    req
+                    required
                   />
                 </Form.Group>
               </div>
@@ -333,4 +333,5 @@ const formatDate = (dateString) => {
   });
 };
 
+export { getStatusBadgeClass };
 export default Projects;

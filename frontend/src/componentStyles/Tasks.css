@@ -6,8 +6,9 @@
   margin-top: 20px;
 }
 
-.backbutton{
-  margin-bottom: 30px;
+.btn-outline-secondary:hover {
+  border-color: #adb5bd;
+  color: #141516; 
 }
 
 .project-header {
