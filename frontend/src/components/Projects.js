@@ -216,9 +216,9 @@ const Projects = ({ onProjectSelect }) => {
               </div>
 
               {/* Timeline */}
-              <div className="col-md-6 mb-3">
+              {/* <div className="col-md-6 mb-3">
                 <Form.Group>
-                  <Form.Label>Timeline (%)</Form.Label>
+                  <Form.Label>Progress (%)</Form.Label>
                   <Form.Control
                     type="number"
                     name="timeline"
@@ -228,7 +228,7 @@ const Projects = ({ onProjectSelect }) => {
                     onChange={handleInputChange}
                   />
                 </Form.Group>
-              </div>
+              </div> */}
 
               {/* Budget */}
               <div className="col-md-6 mb-3">
@@ -259,6 +259,20 @@ const Projects = ({ onProjectSelect }) => {
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
                   </Form.Select>
+                </Form.Group>
+              </div>
+
+              {/* Date Start */}
+              <div className="col-md-6 mb-3">
+                <Form.Group>
+                  <Form.Label>Date Started</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="start_date"
+                    value={currentProject.start_date}
+                    onChange={handleInputChange}
+                    required
+                  />
                 </Form.Group>
               </div>
 
@@ -319,4 +333,5 @@ const formatDate = (dateString) => {
   });
 };
 
+export { getStatusBadgeClass };
 export default Projects;
