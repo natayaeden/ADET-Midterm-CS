@@ -318,6 +318,7 @@ const Tasks = () => {
                     <Modal.Header closeButton>
                         <Modal.Title>{editMode ? 'Edit Task' : 'Create New Task'}</Modal.Title>
                     </Modal.Header>
+                    
                     <Modal.Body>
                         <Form onSubmit={handleSubmit}>
                             <Form.Group className="mb-3">
@@ -429,7 +430,7 @@ const Tasks = () => {
                         </Form>
                     </Modal.Body>
                 </Modal>
-            </div>
+        </div>
     );
 };
 
