@@ -430,7 +430,6 @@ const Tasks = () => {
                     </Modal.Body>
                 </Modal>
             </div>
-        </>
     );
 };
 
