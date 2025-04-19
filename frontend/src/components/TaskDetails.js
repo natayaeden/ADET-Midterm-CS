@@ -154,15 +154,6 @@ const TaskDetails = () => {
                                     </Card>
                                 </Col>
                             </Row>
-                            
-                            <div className="d-flex justify-content-between mt-4">
-                                <Button 
-                                    variant="primary" 
-                                    onClick={() => navigate(`/tasks/${task.id}/edit`, { state: { task } })}
-                                >
-                                    <i className="bi bi-pencil-fill me-2"></i>Edit Task
-                                </Button>
-                            </div>
                         </Card.Body>
                     </Card>
                 </Col>

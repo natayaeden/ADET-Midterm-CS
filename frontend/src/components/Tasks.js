@@ -233,7 +233,7 @@ const Tasks = () => {
                                         <strong>Status:</strong> <Badge className={getStatusBadgeClass(project.status)}>{project.status}</Badge>
                                     </p>
                                     <p>
-                                        <strong>Timeline:</strong> {formatDate(project.start_date || project.startDate)} - {formatDate(project.due_date || project.dueDate)}
+                                        <strong>Due Date:</strong> {formatDate(project.start_date || project.startDate)} - {formatDate(project.due_date || project.dueDate)}
                                     </p>
                                     <p>
                                         <strong>Budget:</strong> {formatCurrency(project.project_budget || project.budget)}
