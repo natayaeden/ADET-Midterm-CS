@@ -10,22 +10,42 @@ class Task extends Model
     use HasFactory;
 
     protected $fillable = [
-        'project_id', //check first if this is must be fillable
         'title',
         'description',
+        'project_id',
         'assigned_to',
-        'task_budget',
-        'due_date',
+        'status',
         'priority',
-        'status'
+        'due_date',
+        'estimated_hours',
     ];
 
     protected $casts = [
-        'due_date' => 'datetime'
+        'due_date' => 'date',
     ];
 
     public function project()
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function timeEntries()
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(TaskComment::class);
+    }
+
+    public function getTotalTimeSpentAttribute()
+    {
+        return $this->timeEntries->sum('hours');
     }
 }

@@ -3,93 +3,98 @@
 namespace App\Http\Controllers;
 
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class ProjectController extends Controller
 {
     public function index()
     {
-        try {
-            $projects = Project::where('user_id', Auth::id())->get();
-            return response()->json(['projects' => $projects], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error fetching projects', 'error' => $e->getMessage()], 500);
-        }
+        $projects = Project::with('manager:id,name')->get();
+        return response()->json($projects);
     }
 
     public function store(Request $request)
     {
-        try {
-            $validated = $request->validate([
-                'name' => 'required|string|max:255',
-                'description' => 'required|string',
-                'project_manager' => 'nullable|string|max:255',
-                'timeline' => 'nullable|integer|min:0|max:100',
-                'project_budget' => 'nullable|numeric|min:0',
-                'status' => 'required|in:In Queue,To Do,In Progress,Completed',
-                'due_date' => 'required|date',
-            ]);
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'user_id' => 'required|exists:users,id',
+            'budget' => 'required|numeric|min:0',
+            'status' => 'required|in:In Queue,To Do,In Progress,Completed',
+            'start_date' => 'required|date',
+            'due_date' => 'required|date|after_or_equal:start_date',
+        ]);
 
-            $project = Project::create([
-                'user_id' => Auth::id(),
-                'name' => $validated['name'],
-                'description' => $validated['description'],
-                'project_manager' => $validated['project_manager'] ?? null,
-                'timeline' => $validated['timeline'] ?? 0,
-                'project_budget' => $validated['project_budget'] ?? null,
-                'status' => $validated['status'],
-                'due_date' => $validated['due_date']
-            ]);
-
-            return response()->json(['message' => 'Project created successfully', 'project' => $project], 201);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error creating project', 'error' => $e->getMessage()], 500);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
+
+        $project = Project::create($request->all());
+        $project->load('manager:id,name');
+
+        return response()->json($project, 201);
     }
 
-    public function show($id)
+    public function show(Project $project)
     {
-        try {
-            $project = Project::where('user_id', Auth::id())->findOrFail($id);
-            return response()->json(['project' => $project], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Project not found', 'error' => $e->getMessage()], 404);
-        }
+        $project->load('manager:id,name');
+        return response()->json($project);
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, Project $project)
     {
-        try {
-            $project = Project::where('user_id', Auth::id())->findOrFail($id);
+        $validator = Validator::make($request->all(), [
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'user_id' => 'sometimes|required|exists:users,id',
+            'budget' => 'sometimes|required|numeric|min:0',
+            'status' => 'sometimes|required|in:In Queue,To Do,In Progress,Completed',
+            'start_date' => 'sometimes|required|date',
+            'due_date' => 'sometimes|required|date|after_or_equal:start_date',
+        ]);
 
-            $validated = $request->validate([
-                'name' => 'nullable|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'project_manager' => 'nullable|string|max:255',
-                'timeline' => 'nullable|integer|min:0|max:100',
-                'project_budget' => 'nullable|numeric|min:0',
-                'status' => 'nullable|in:In Queue,To Do,In Progress,Completed',
-                'due_date' => 'nullable|date'
-            ]);
-
-            $project->update($validated);
-
-            return response()->json(['message' => 'Project updated successfully', 'project' => $project], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error updating project', 'error' => $e->getMessage()], 500);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
+
+        $project->update($request->all());
+        $project->load('manager:id,name');
+
+        return response()->json($project);
     }
 
-    public function destroy($id)
+    public function destroy(Project $project)
     {
-        try {
-            $project = Project::where('user_id', Auth::id())->findOrFail($id);
-            $project->delete();
-
-            return response()->json(['message' => 'Project deleted successfully'], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error deleting project', 'error' => $e->getMessage()], 500);
-        }
+        $project->delete();
+        return response()->json(null, 204);
     }
+
+    public function getProjectManagers()
+    {
+        $users = User::select('id', 'name')->get();
+        return response()->json($users);
+    }
+
+    public function statistics(Project $project)
+    {
+        $totalTasks = $project->tasks()->count();
+        $completedTasks = $project->tasks()->where('status', 'Completed')->count();
+        $totalExpenditure = $project->total_expenditure;
+        $budgetRemaining = $project->budget_remaining;
+        
+        return response()->json([
+            'total_tasks' => $totalTasks,
+            'completed_tasks' => $completedTasks,
+            'completion_percentage' => $totalTasks > 0 ? ($completedTasks / $totalTasks * 100) : 0,
+            'total_expenditure' => $totalExpenditure,
+            'budget_remaining' => $budgetRemaining,
+            'budget_utilization_percentage' => $project->budget > 0 ? ($totalExpenditure / $project->budget * 100) : 0,
+        ]);
+    }
+
+    
+
+    
 }

@@ -5,96 +5,92 @@ namespace App\Http\Controllers;
 use App\Models\Task;
 use App\Models\Project;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class TaskController extends Controller
 {
-    public function index($projectId)
+    public function index(Request $request)
     {
-        try {
-            $project = Project::where('user_id', Auth::id())->findOrFail($projectId);
-            $tasks = Task::where('project_id', $projectId)->get();
-            return response()->json(['tasks' => $tasks], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error fetching tasks', 'error' => $e->getMessage()], 500);
+        $query = Task::with(['assignedTo:id,name', 'project:id,name']);
+        
+        if ($request->has('project_id')) {
+            $query->where('project_id', $request->project_id);
         }
+        
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->has('assigned_to')) {
+            $query->where('assigned_to', $request->assigned_to);
+        }
+        
+        $tasks = $query->get();
+        
+        return response()->json($tasks);
     }
 
-    public function store(Request $request, $projectId)
+    public function store(Request $request)
     {
-        try {
-            $project = Project::where('user_id', Auth::id())->findOrFail($projectId);
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'project_id' => 'required|exists:projects,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'status' => 'required|in:To Do,In Progress,Under Review,Completed',
+            'priority' => 'required|in:Low,Medium,High,Urgent',
+            'due_date' => 'nullable|date',
+            'estimated_hours' => 'nullable|integer|min:0',
+        ]);
 
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'required|string',
-                'priority' => 'required|in:High,Medium,Low',
-                'status' => 'required|in:To Do,In Progress,Done',
-                'due_date' => 'required|date'
-            ]);
-
-            $task = Task::create([
-                'project_id' => $projectId,
-                'title' => $validated['title'],
-                'description' => $validated['description'],
-                'assigned_to' => $request->input('assigned_to'),
-                'task_budget' => 'nullable|numeric|min:0',
-                'due_date' => $validated['due_date'],
-                'priority' => $validated['priority'],
-                'status' => $validated['status']
-            ]);
-
-            return response()->json(['message' => 'Task created successfully', 'task' => $task], 201);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error creating task', 'error' => $e->getMessage()], 500);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
+
+        $task = Task::create($request->all());
+        $task->load(['assignedTo:id,name', 'project:id,name']);
+
+        return response()->json($task, 201);
     }
 
-    public function show($projectId, $id)
+    public function show(Task $task)
     {
-        try {
-            $project = Project::where('user_id', Auth::id())->findOrFail($projectId);
-            $task = Task::where('project_id', $projectId)->findOrFail($id);
-            return response()->json(['task' => $task], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Task not found', 'error' => $e->getMessage()], 404);
-        }
+        $task->load(['assignedTo:id,name', 'project:id,name', 'comments.user:id,name', 'timeEntries']);
+        return response()->json($task);
     }
 
-    public function update(Request $request, $projectId, $id)
+    public function update(Request $request, Task $task)
     {
-        try {
-            $project = Project::where('user_id', Auth::id())->findOrFail($projectId);
-            $task = Task::where('project_id', $projectId)->findOrFail($id);
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'project_id' => 'sometimes|required|exists:projects,id',
+            'assigned_to' => 'nullable|exists:users,id',
+            'status' => 'sometimes|required|in:To Do,In Progress,Under Review,Completed',
+            'priority' => 'sometimes|required|in:Low,Medium,High,Urgent',
+            'due_date' => 'nullable|date',
+            'estimated_hours' => 'nullable|integer|min:0',
+        ]);
 
-            $validated = $request->validate([
-                'title' => 'string|max:255',
-                'description' => 'string',
-                'assigned_to' => 'string|max:255',
-                'task_budget' => 'nullable|numeric|min:0',
-                'due_date' => 'date',
-                'priority' => 'in:High,Medium,Low',
-                'status' => 'in:To Do,In Progress,Done'
-            ]);
-
-            $task->update($validated);
-
-            return response()->json(['message' => 'Task updated successfully', 'task' => $task], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error updating task', 'error' => $e->getMessage()], 500);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
+
+        $task->update($request->all());
+        $task->load(['assignedTo:id,name', 'project:id,name']);
+
+        return response()->json($task);
     }
 
-    public function destroy($projectId, $id)
+    public function destroy(Task $task)
     {
-        try {
-            $project = Project::where('user_id', Auth::id())->findOrFail($projectId);
-            $task = Task::where('project_id', $projectId)->findOrFail($id);
-            $task->delete();
+        $task->delete();
+        return response()->json(null, 204);
+    }
 
-            return response()->json(['message' => 'Task deleted successfully'], 200);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Error deleting task', 'error' => $e->getMessage()], 500);
-        }
+    public function getTasksByProject(Project $project)
+    {
+        $tasks = $project->tasks()->with('assignedTo:id,name')->get();
+        return response()->json($tasks);
     }
 }

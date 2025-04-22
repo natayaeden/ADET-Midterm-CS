@@ -1,88 +1,175 @@
-import React, { useState, useEffect, useRef } from 'react';
+// components/Dashboard.js
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import 'bootstrap-icons/font/bootstrap-icons.css';
-import '../componentStyles/Dashboard.css';
 
-const Dashboard = () => {
+
+
+const Dashboard = ({ user }) => {
+  const [stats, setStats] = useState({
+    projects: { total: 0, active: 0 },
+    tasks: { total: 0, completed: 0, overdue: 0 }
+  });
+  const [recentProjects, setRecentProjects] = useState([]);
+  const [upcomingTasks, setUpcomingTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Fetch statistics
+      const statsResponse = await fetch('http://localhost:8000/api/dashboard/stats', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Fetch recent projects
+      const projectsResponse = await fetch('http://localhost:8000/api/projects/recent', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      // Fetch upcoming tasks
+      const tasksResponse = await fetch('http://localhost:8000/api/tasks/upcoming', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      const statsData = await statsResponse.json();
+      const projectsData = await projectsResponse.json();
+      const tasksData = await tasksResponse.json();
+      
+      setStats(statsData);
+      setRecentProjects(projectsData);
+      setUpcomingTasks(tasksData);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-5"><div className="spinner-border"></div></div>;
+  }
+
   return (
-        <div className="container-fluid p-4">
-          <h2 className="mb-4 fw-bold">Dashboard</h2>
-
-          {/* Project and Budget Cards */}
-          <div className="row g-4">
-            <div className="col-md-6">
-              <div className="card shadow-sm p-3">
-                <div className="d-flex align-items-center">
-                  <i className="bi bi-folder-check me-3 text-primary fs-3"></i>
-                  <h5 className="m-0">Total Projects</h5>
-                </div>
-                <h3 className="mt-2 fw-bold">24</h3>
-              </div>
+    <div className="dashboard">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Welcome, {user?.name}</h1>
+        <Link to="/projects/new" className="btn btn-primary">
+          <i className="bi bi-plus-circle me-2"></i>New Project
+        </Link>
+      </div>
+      
+      {/* Stats Cards */}
+      <div className="row mb-4">
+        <div className="col-md-3">
+          <div className="card text-white bg-primary mb-3">
+            <div className="card-body">
+              <h5 className="card-title">Total Projects</h5>
+              <h2>{stats.projects.total}</h2>
             </div>
-            <div className="col-md-6">
-              <div className="card shadow-sm p-3">
-                <div className="d-flex align-items-center">
-                  <i className="bi bi-wallet2 me-3 text-success fs-3"></i>
-                  <h5 className="m-0">Budget Tracking</h5>
-                </div>
-                <h3 className="mt-2 fw-bold">₱50,000</h3>
-              </div>
-            </div>
-          </div>
-
-          {/* Project Table */}
-          <div className="card mt-4 shadow-sm p-3">
-            <h4 className="fw-bold">Ongoing Projects</h4>
-            <table className="table table-bordered mt-3">
-              <thead className="table-light">
-                <tr>
-                  <th>Project</th>
-                  <th>Project Manager</th>
-                  <th>Timeline</th>
-                  <th>Status</th>
-                  <th>Due Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Website Redesign</td>
-                  <td>Obrey Monter</td>
-                  <td>
-                    <div className="progress">
-                      <div className="progress-bar bg-primary" style={{ width: "60%" }}></div>
-                    </div>
-                  </td>
-                  <td><span className="badge bg-success">Done</span></td>
-                  <td>April 10, 2025</td>
-                </tr>
-                <tr>
-                  <td>Mobile App Development</td>
-                  <td>Eden Nataya</td>
-                  <td>
-                    <div className="progress">
-                      <div className="progress-bar bg-warning" style={{ width: "40%" }}></div>
-                    </div>
-                  </td>
-                  <td><span className="badge bg-warning">In Progress</span></td>
-                  <td>April 10, 2025</td>
-                </tr>
-                <tr>
-                  <td>Marketing Campaign</td>
-                  <td>Niko Nositera</td>
-                  <td>
-                    <div className="progress">
-                      <div className="progress-bar bg-danger" style={{ width: "20%" }}></div>
-                    </div>
-                  </td>
-                  <td><span className="badge bg-danger">Stuck</span></td>
-                  <td>April 10, 2025</td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
-  )
+        <div className="col-md-3">
+          <div className="card text-white bg-success mb-3">
+            <div className="card-body">
+              <h5 className="card-title">Active Projects</h5>
+              <h2>{stats.projects.active}</h2>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card text-white bg-info mb-3">
+            <div className="card-body">
+              <h5 className="card-title">Total Tasks</h5>
+              <h2>{stats.tasks.total}</h2>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="card text-white bg-warning mb-3">
+            <div className="card-body">
+              <h5 className="card-title">Overdue Tasks</h5>
+              <h2>{stats.tasks.overdue}</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Recent Projects */}
+      <div className="row">
+        <div className="col-md-6">
+          <div className="card mb-4">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">Recent Projects</h5>
+              <Link to="/projects" className="btn btn-sm btn-outline-primary">View All</Link>
+            </div>
+            <div className="card-body">
+              {recentProjects.length === 0 ? (
+                <p className="text-muted">No recent projects found.</p>
+              ) : (
+                <div className="list-group">
+                  {recentProjects.map(project => (
+                    <Link 
+                      key={project.id} 
+                      to={`/projects/${project.id}`} 
+                      className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                    >
+                      <div>
+                        <h6 className="mb-1">{project.title}</h6>
+                        <small className="text-muted">Last updated: {new Date(project.updated_at).toLocaleDateString()}</small>
+                      </div>
+                      <span className={`badge bg-${project.status === 'completed' ? 'success' : 'primary'} rounded-pill`}>
+                        {project.status}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {/* Upcoming Tasks */}
+        <div className="col-md-6">
+          <div className="card mb-4">
+            <div className="card-header d-flex justify-content-between align-items-center">
+              <h5 className="mb-0">Upcoming Tasks</h5>
+              <Link to="/projects" className="btn btn-sm btn-outline-primary">View All</Link>
+            </div>
+            <div className="card-body">
+              {upcomingTasks.length === 0 ? (
+                <p className="text-muted">No upcoming tasks found.</p>
+              ) : (
+                <div className="list-group">
+                  {upcomingTasks.map(task => (
+                    <Link 
+                      key={task.id} 
+                      to={`/tasks/${task.id}`} 
+                      className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                    >
+                      <div>
+                        <h6 className="mb-1">{task.title}</h6>
+                        <small className="text-muted">
+                          Due: {new Date(task.due_date).toLocaleDateString()} - Project: {task.project_title}
+                        </small>
+                      </div>
+                      <span className={`badge bg-${task.priority === 'high' ? 'danger' : task.priority === 'medium' ? 'warning' : 'info'} rounded-pill`}>
+                        {task.priority}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Dashboard;
