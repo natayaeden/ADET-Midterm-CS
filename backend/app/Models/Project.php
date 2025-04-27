@@ -34,7 +34,6 @@ class Project extends Model
     {
         return $this->hasMany(Task::class);
     }
-<<<<<<< HEAD
 
     public function expenditures()
     {
@@ -50,6 +49,4 @@ class Project extends Model
     {
         return $this->budget - $this->total_expenditure;
     }
-=======
->>>>>>> main
 }
