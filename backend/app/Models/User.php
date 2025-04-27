@@ -12,7 +12,7 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'username',
+        'name',
         'email',
         'password',
     ];
@@ -24,5 +24,27 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'password' => 'hashed',
     ];
+
+    public function managedProjects()
+    {
+        return $this->hasMany(Project::class, 'user_id');
+    }
+
+    public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    public function timeEntries()
+    {
+        return $this->hasMany(TimeEntry::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(TaskComment::class);
+    }
 }
+
