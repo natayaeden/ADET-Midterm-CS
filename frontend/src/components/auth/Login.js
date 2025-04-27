@@ -1,4 +1,3 @@
-// components/auth/Login.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Form, Button, Alert } from 'react-bootstrap';
@@ -12,31 +11,32 @@ const Login = ({ onLogin }) => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   useEffect(() => {
     document.body.classList.add('auth-page');
     return () => {
       document.body.classList.remove('auth-page');
     };
   }, []);
-  
+
   const { email, password, remember } = formData;
-  
+
   const handleChange = e => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setFormData({ ...formData, [e.target.name]: value });
   };
-  
+
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       const response = await fetch('http://localhost:8000/api/login', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json', // ✅ added this
         },
         body: JSON.stringify({
           email,
@@ -44,13 +44,13 @@ const Login = ({ onLogin }) => {
           remember
         })
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Invalid login credentials');
       }
-      
+
       onLogin(data.token, data.user);
     } catch (err) {
       setError(err.message);
@@ -58,7 +58,7 @@ const Login = ({ onLogin }) => {
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="login-container">
       <div className="login-card">
@@ -71,7 +71,7 @@ const Login = ({ onLogin }) => {
             <div className="login-shapes"></div>
           </div>
         </div>
-        
+
         <div className="login-card-right">
           <div className="login-form-wrapper">
             <h2 className="login-form-heading">Sign In</h2>
@@ -88,7 +88,7 @@ const Login = ({ onLogin }) => {
                   className="login-input"
                 />
               </Form.Group>
-              
+
               <Form.Group className="login-form-group">
                 <Form.Control
                   type="password"
@@ -100,9 +100,9 @@ const Login = ({ onLogin }) => {
                   className="login-input"
                 />
               </Form.Group>
-              
+
               <div className="login-remember-forgot">
-                <Form.Check 
+                <Form.Check
                   type="checkbox"
                   id="remember-me"
                   label="Remember me"
@@ -113,7 +113,7 @@ const Login = ({ onLogin }) => {
                 />
                 <Link to="/forgot-password" className="login-forgot-link">Forgot password?</Link>
               </div>
-              
+
               <Button
                 type="submit"
                 disabled={loading}
@@ -121,7 +121,7 @@ const Login = ({ onLogin }) => {
               >
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
-              
+
               <div className="login-new-user">
                 New here? <Link to="/register" className="login-register-link">Create an account</Link>
               </div>
