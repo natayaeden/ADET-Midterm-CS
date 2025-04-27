@@ -10,6 +10,7 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
+<<<<<<< HEAD
         'name',
         'description',
         'user_id',
@@ -28,12 +29,32 @@ class Project extends Model
     public function manager()
     {
         return $this->belongsTo(User::class, 'user_id');
+=======
+        'user_id',
+        'name',
+        'description',
+        'project_manager',
+        'timeline',
+        'project_budget',
+        'status',
+        'due_date'
+    ];
+
+    protected $casts = [
+        'due_date' => 'datetime'
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+>>>>>>> main
     }
 
     public function tasks()
     {
         return $this->hasMany(Task::class);
     }
+<<<<<<< HEAD
 
     public function expenditures()
     {
@@ -49,4 +70,6 @@ class Project extends Model
     {
         return $this->budget - $this->total_expenditure;
     }
+=======
+>>>>>>> main
 }
