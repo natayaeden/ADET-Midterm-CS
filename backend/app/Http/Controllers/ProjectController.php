@@ -93,8 +93,5 @@ class ProjectController extends Controller
             'budget_utilization_percentage' => $project->budget > 0 ? ($totalExpenditure / $project->budget * 100) : 0,
         ]);
     }
-
-    
-
-    
+   
 }

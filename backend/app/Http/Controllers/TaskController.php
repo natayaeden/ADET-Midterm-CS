@@ -93,4 +93,5 @@ class TaskController extends Controller
         $tasks = $project->tasks()->with('assignedTo:id,name')->get();
         return response()->json($tasks);
     }
+    
 }
