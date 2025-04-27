@@ -122,4 +122,5 @@ const BudgetForm = ({ onAddExpense }) => {
   );
 };
 
+
 export default BudgetForm;
