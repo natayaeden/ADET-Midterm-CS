@@ -10,26 +10,43 @@ const TaskDetail = () => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     status: '',
     priority: '',
     due_date: '',
-    assigned_to: ''
+    assigned_to: '',
+    estimated_hours: ''
   });
   const [newComment, setNewComment] = useState('');
   const [updateError, setUpdateError] = useState(null);
 
   useEffect(() => {
+    fetchUsers();
     fetchTaskDetails();
   }, [id]);
+
+  const fetchUsers = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch('http://localhost:8000/api/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Failed to fetch users');
+      const data = await response.json();
+      console.log('Fetched users:', data);
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    }
+  };
 
   const fetchTaskDetails = async () => {
     try {
       const token = localStorage.getItem('token');
       
-      // Fetch task details
       const taskResponse = await fetch(`http://localhost:8000/api/tasks/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -107,11 +124,12 @@ const TaskDetail = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(formData)
-      });
+      });      
       
+      // to be deleted
       // Get the full response for better error handling
       const responseText = await response.text();
-      console.log("Raw server response:", responseText);
+      // console.log("Raw server response:", responseText);
       
       let responseData;
       try {
@@ -128,6 +146,7 @@ const TaskDetail = () => {
                              `Server returned ${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
+      // to be deleted
       
       console.log("Task updated successfully:", responseData);
       
@@ -138,7 +157,7 @@ const TaskDetail = () => {
       // Refresh to get the latest data
       fetchTaskDetails();
     } catch (error) {
-      console.error('Error updating task:', error);
+      // console.error('Error updating task:', error);
       setUpdateError(error.message || 'Failed to update task. Please try again.');
     }
   };
@@ -205,7 +224,7 @@ const TaskDetail = () => {
       case 'Completed': return 'success';
       case 'In Progress': return 'warning';
       case 'Under Review': return 'info';
-      default: return 'secondary'; // To Do
+      default: return 'secondary';
     }
   };
 
@@ -353,15 +372,18 @@ const TaskDetail = () => {
               
               <div className="mb-3">
                 <label htmlFor="assigned_to" className="form-label">Assigned To</label>
-                <input
-                  type="text"
-                  className="form-control"
+                <select
+                  className="form-select"
                   id="assigned_to"
                   name="assigned_to"
                   value={formData.assigned_to}
                   onChange={handleInputChange}
-                  placeholder="Enter user ID or leave blank for unassigned"
-                />
+                >
+                  <option value="">Unassigned</option>
+                  {users.map(user => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
+                  ))}
+                </select>
               </div>
             </form>
           ) : (
@@ -399,7 +421,7 @@ const TaskDetail = () => {
                     </li>
                     <li className="list-group-item d-flex justify-content-between align-items-center">
                       Assigned To
-                      <span>{task.assigned_to || 'Unassigned'}</span>
+                      <span>{users.find(user => user.id === task.assigned_to)?.name || 'Unassigned'}</span>
                     </li>
                   </ul>
                 </div>
