@@ -24,6 +24,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/project-managers', [ProjectController::class, 'getProjectManagers']);
     Route::get('/projects/{project}/statistics', [ProjectController::class, 'statistics']);
     
+    // Budget routes
+    Route::get('/projects/{project}/budget', [ProjectController::class, 'getBudget']);
+    Route::put('/projects/{project}/budget', [ProjectController::class, 'updateBudget']);
+    
     // Task routes
     Route::apiResource('tasks', TaskController::class);
     Route::get('/projects/{project}/tasks', [TaskController::class, 'getTasksByProject']);
@@ -35,6 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Expenditure routes
     Route::apiResource('expenditures', ExpenditureController::class);
     Route::get('/projects/{project}/expenditures', [ExpenditureController::class, 'getExpendituresByProject']);
+    Route::post('/projects/{project}/expenses', [ExpenditureController::class, 'storeExpense']);
     
     // Comment routes
     Route::apiResource('task-comments', TaskCommentController::class);
@@ -42,5 +47,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store']);
     
+    // User routes
+    Route::get('/users', [AuthController::class, 'getAllUsers']);
 
 });

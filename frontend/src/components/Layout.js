@@ -57,17 +57,17 @@ const Layout = () => {
                 </li> */}
 
 
-                <li className={location.pathname === "/budget" ? "active" : ""}>
+                 {/* <li className={location.pathname === "/budget" ? "active" : ""}>
                     <Link to="#">
                         <i className="bi bi-cash-stack"></i><span>Budget Tracker</span>
                     </Link>
-                </li>
+                </li> */}
 
                 <li className={location.pathname === "/reports" ? "active" : ""}>
                     <Link to="#">
                         <i className="bi bi-bar-chart"></i><span>Reports</span>
                     </Link>
-                </li>
+                </li> 
             </ul>
         </nav>
         <div className="sidebar-footer">

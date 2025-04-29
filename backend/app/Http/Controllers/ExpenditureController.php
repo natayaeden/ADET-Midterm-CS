@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Expenditure;
+use Illuminate\Support\Facades\Validator;
 
 class ExpenditureController extends Controller
 {
@@ -12,7 +14,8 @@ class ExpenditureController extends Controller
      */
     public function index()
     {
-        //
+        $expenditures = Expidenture::all();
+        return response()->json($expenditures);
     }
 
     /**
@@ -20,7 +23,19 @@ class ExpenditureController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'required|exists:projects,id',
+            'amount' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+            'date' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $expenditure = Expidenture::create($request->all());
+        return response()->json($expenditure, 201);
     }
 
     /**
@@ -28,7 +43,8 @@ class ExpenditureController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $expenditure = Expidenture::findOrFail($id);
+        return response()->json($expenditure);
     }
 
     /**
@@ -36,7 +52,21 @@ class ExpenditureController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        $expenditure = Expidenture::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'project_id' => 'sometimes|required|exists:projects,id',
+            'amount' => 'sometimes|required|numeric|min:0',
+            'description' => 'nullable|string',
+            'date' => 'sometimes|required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $expenditure->update($request->all());
+        return response()->json($expenditure);
     }
 
     /**
@@ -44,8 +74,8 @@ class ExpenditureController extends Controller
      */
     public function destroy(string $id)
     {
-        //
-
-        
+        $expenditure = Expidenture::findOrFail($id);
+        $expenditure->delete();
+        return response()->json(null, 204);
     }
 }
