@@ -1,4 +1,3 @@
-// components/tasks/TaskDetail.js
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 
@@ -36,7 +35,6 @@ const TaskDetail = () => {
       });
       if (!response.ok) throw new Error('Failed to fetch users');
       const data = await response.json();
-      console.log('Fetched users:', data);
       setUsers(data);
     } catch (error) {
       console.error('Failed to load users:', error);
@@ -61,7 +59,6 @@ const TaskDetail = () => {
       // Format the date properly for the input field
       let formattedDate = '';
       if (taskData.due_date) {
-        // Handle different date formats that might come from the API
         formattedDate = taskData.due_date.includes('T') 
           ? taskData.due_date.split('T')[0] 
           : taskData.due_date;
@@ -82,6 +79,10 @@ const TaskDetail = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
+      if (!projectResponse.ok) {
+        throw new Error('Project not found');
+      }
+      
       const projectData = await projectResponse.json();
       setProject(projectData);
       
@@ -89,6 +90,10 @@ const TaskDetail = () => {
       const commentsResponse = await fetch(`http://localhost:8000/api/tasks/${id}/comments`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      
+      if (!commentsResponse.ok) {
+        throw new Error('Failed to fetch comments');
+      }
       
       const commentsData = await commentsResponse.json();
       setComments(commentsData);
@@ -113,9 +118,6 @@ const TaskDetail = () => {
     setUpdateError(null);
     
     try {
-      // Log data before sending for debugging
-      console.log("Sending update with data:", formData);
-      
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:8000/api/tasks/${id}`, {
         method: 'PUT',
@@ -126,17 +128,12 @@ const TaskDetail = () => {
         body: JSON.stringify(formData)
       });      
       
-      // to be deleted
-      // Get the full response for better error handling
       const responseText = await response.text();
-      // console.log("Raw server response:", responseText);
       
       let responseData;
       try {
-        // Try to parse as JSON if possible
         responseData = JSON.parse(responseText);
       } catch (e) {
-        // Not valid JSON, use raw text
         responseData = { message: responseText };
       }
       
@@ -146,18 +143,11 @@ const TaskDetail = () => {
                              `Server returned ${response.status}: ${response.statusText}`;
         throw new Error(errorMessage);
       }
-      // to be deleted
       
-      console.log("Task updated successfully:", responseData);
-      
-      // Update task state with the returned data
       setTask(responseData);
       setIsEditing(false);
-      
-      // Refresh to get the latest data
       fetchTaskDetails();
     } catch (error) {
-      // console.error('Error updating task:', error);
       setUpdateError(error.message || 'Failed to update task. Please try again.');
     }
   };
@@ -218,7 +208,6 @@ const TaskDetail = () => {
     return <div className="alert alert-danger">Task or project not found</div>;
   }
 
-  // Helper function to get status badge color
   const getStatusBadgeColor = (status) => {
     switch(status) {
       case 'Completed': return 'success';
@@ -228,7 +217,6 @@ const TaskDetail = () => {
     }
   };
 
-  // Helper function to get priority badge color
   const getPriorityBadgeColor = (priority) => {
     switch(priority) {
       case 'Urgent': return 'danger';
@@ -354,7 +342,7 @@ const TaskDetail = () => {
                   />
                 </div>
                 
-                <div className="col-md-6">
+                {/* <div className="col-md-6">
                   <label htmlFor="estimated_hours" className="form-label">Estimated Hours</label>
                   <input
                     type="number"
@@ -367,7 +355,7 @@ const TaskDetail = () => {
                     step="0.5"
                     placeholder="Estimated hours to complete"
                   />
-                </div>
+                </div> */}
               </div>
               
               <div className="mb-3">
@@ -415,13 +403,17 @@ const TaskDetail = () => {
                       Due Date
                       <span>{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Not set'}</span>
                     </li>
-                    <li className="list-group-item d-flex justify-content-between align-items-center">
+                    {/* <li className="list-group-item d-flex justify-content-between align-items-center">
                       Estimated Hours
                       <span>{task.estimated_hours || 'Not estimated'}</span>
-                    </li>
+                    </li> */}
                     <li className="list-group-item d-flex justify-content-between align-items-center">
                       Assigned To
-                      <span>{users.find(user => user.id === task.assigned_to)?.name || 'Unassigned'}</span>
+                      <span>{
+                        typeof task.assigned_to === 'object'
+                          ? task.assigned_to.name
+                          : users.find(user => user.id === Number(task.assigned_to))?.name || 'Unassigned'
+                      }</span>
                     </li>
                   </ul>
                 </div>

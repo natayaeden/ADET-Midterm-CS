@@ -6,6 +6,7 @@ import '../componentStyles/Tasks.css';
 
 const Tasks = () => {
     const [tasks, setTasks] = useState([]);
+    const [users, setUsers] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [currentTask, setCurrentTask] = useState({
@@ -22,7 +23,7 @@ const Tasks = () => {
 
     const location = useLocation();
     const navigate = useNavigate();
-    
+
     // Get project from location state or local storage
     const projectFromLocation = location.state?.project;
     const [project, setProject] = useState(null);
@@ -46,18 +47,40 @@ const Tasks = () => {
 
     useEffect(() => {
         if (project) {
-            // Load tasks for this project
-            const storedTasks = JSON.parse(localStorage.getItem(`tasks_${project.id}`)) || [];
-            setTasks(storedTasks);
+            fetchTasks();
+            fetchUsers();
         }
     }, [project]);
 
-    useEffect(() => {
-        if (project) {
-            // Save tasks whenever they change
-            localStorage.setItem(`tasks_${project.id}`, JSON.stringify(tasks));
+    const fetchTasks = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`http://localhost:8000/api/tasks?project_id=${project.id}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Failed to fetch tasks');
+            const data = await response.json();
+            console.log('Fetched tasks:', data);
+            setTasks(data);
+        } catch (error) {
+            console.error('Failed to load tasks:', error);
         }
-    }, [tasks, project]);
+    };
+
+    const fetchUsers = async () => {
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('http://localhost:8000/api/users', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('Failed to fetch users');
+            const data = await response.json();
+            console.log('Fetched users:', data);
+            setUsers(data);
+        } catch (error) {
+            console.error('Failed to load users:', error);
+        }
+    };
 
     const handleCloseModal = () => {
         setShowModal(false);
@@ -87,61 +110,93 @@ const Tasks = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Check if the task is updated
-        const taskUpdated = editMode
-            ? tasks.some((task) => task.id === currentTask.id && (
-                  task.title !== currentTask.title ||
-                  task.description !== currentTask.description ||
-                  task.assigned_to !== currentTask.assigned_to ||
-                  task.priority !== currentTask.priority ||
-                  task.status !== currentTask.status ||
-                  task.due_date !== currentTask.due_date ||
-                  task.task_budget !== currentTask.task_budget
-              ))
-            : true;
+        const token = localStorage.getItem('token');
+        const method = editMode ? 'PUT' : 'POST';
+        const url = editMode
+            ? `http://localhost:8000/api/tasks/${currentTask.id}`
+            : `http://localhost:8000/api/projects/${project.id}/tasks`;
 
-        if (!taskUpdated) {
-            alert("No changes detected.");
-            return;  // Prevent closing if no updates
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    title: currentTask.title,
+                    description: currentTask.description,
+                    assigned_to: currentTask.assigned_to || null,
+                    priority: currentTask.priority,
+                    status: currentTask.status,
+                    due_date: currentTask.due_date,
+                    task_budget: currentTask.task_budget,
+                    project_id: project.id
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                alert(`Failed to ${editMode ? 'update' : 'create'} task:\n${JSON.stringify(errorData.errors, null, 2)}`);
+                return;
+            }
+
+            const savedTask = await response.json();
+
+            if (editMode) {
+                setTasks(tasks.map(task => (task.id === savedTask.id ? savedTask : task)));
+            } else {
+                setTasks([...tasks, savedTask]);
+            }
+
+            handleCloseModal();
+        } catch (error) {
+            console.error('Error saving task:', error);
+            alert('An error occurred while saving the task.');
         }
-
-        if (editMode) {
-            setTasks(tasks.map((task) => (task.id === currentTask.id ? currentTask : task)));
-        } else {
-            const newTask = { 
-                ...currentTask, 
-                id: Date.now(),
-                project_id: project.id  // Ensure project_id is set correctly
-            };
-            setTasks([...tasks, newTask]);
-        }
-
-        handleCloseModal();
     };
 
     const handleEdit = (task, e) => {
         e.stopPropagation(); // Prevent row click event from firing
-        setCurrentTask(task);
+        setCurrentTask({
+            ...task,
+            task_budget: task.budget || task.task_budget || '',
+            assigned_to: task.assigned_to || ''
+        });
         setEditMode(true);
         setShowModal(true);
     };
 
-    const handleDelete = (id, e) => {
+    const handleDelete = async (id, e) => {
         e.stopPropagation(); // Prevent row click event from firing
         if (window.confirm('Are you sure you want to delete this task?')) {
-            setTasks(tasks.filter((task) => task.id !== id));
+            const token = localStorage.getItem('token');
+            try {
+                const response = await fetch(`http://localhost:8000/api/tasks/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    setTasks(tasks.filter(task => task.id !== id));
+                } else {
+                    alert('Failed to delete task.');
+                }
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                alert('An error occurred while deleting the task.');
+            }
         }
     };
 
     const handleTaskClick = (task) => {
-        navigate(`/tasks/${task.id}`, { 
-            state: { 
+        navigate(`/tasks/${task.id}`, {
+            state: {
                 task,
-                project: project  // Pass project along with task
-            } 
+                project: project
+            }
         });
     };
 
@@ -250,187 +305,188 @@ const Tasks = () => {
                 </div>
             </div>
 
-                {tasks.length === 0 ? (
-                    <div className="no-tasks">
-                        <p>No tasks found for this project. Add your first task to get started!</p>
-                    </div>
-                ) : (
-                    <div className="table-responsive">
-                        <table className="table table-hover">
-                            <thead className="table-light">
-                                <tr>
-                                    <th>Task Title</th>
-                                    <th>Assignee</th>
-                                    <th>Priority</th>
-                                    <th>Status</th>
-                                    <th>Due Date</th>
-                                    <th>Budget</th>
-                                    <th>Actions</th>
+            {tasks.length === 0 ? (
+                <div className="no-tasks">
+                    <p>No tasks found for this project. Add your first task to get started!</p>
+                </div>
+            ) : (
+                <div className="table-responsive">
+                    <table className="table table-hover">
+                        <thead className="table-light">
+                            <tr>
+                                <th>Task Title</th>
+                                <th>Assignee</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Due Date</th>
+                                <th>Budget</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {tasks.map((task) => (
+                                <tr key={task.id} className="task-row" onClick={() => handleTaskClick(task)}>
+                                    <td>
+                                        <div className="task-name">{task.title}</div>
+                                        <div className="task-description text-muted">{task.description}</div>
+                                    </td>
+                                    <td>{users.find(user => user.id === task.assigned_to)?.name || 'Unassigned'}</td>
+                                    <td>
+                                        <span className={`priority-badge ${getPriorityBadgeClass(task.priority)}`}>
+                                            {task.priority}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`status-pill ${getTaskStatusClass(task.status)}`}>
+                                            {task.status}
+                                        </span>
+                                    </td>
+                                    <td>{formatDate(task.due_date)}</td>
+                                    <td>{formatCurrency(task.task_budget)}</td>
+                                    <td>
+                                        <div className="actions-container">
+                                            <Button
+                                                variant="outline-secondary"
+                                                size="sm"
+                                                className="me-2"
+                                                onClick={(e) => handleEdit(task, e)}
+                                            >
+                                                <i className="bi bi-pencil"></i>
+                                            </Button>
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                onClick={(e) => handleDelete(task.id, e)}
+                                            >
+                                                <i className="bi bi-trash"></i>
+                                            </Button>
+                                        </div>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                {tasks.map((task) => (
-                                    <tr key={task.id} className="task-row" onClick={() => handleTaskClick(task)}>
-                                        <td>
-                                            <div className="task-name">{task.title}</div>
-                                            <div className="task-description text-muted">{task.description}</div>
-                                        </td>
-                                        <td>{task.assigned_to}</td>
-                                        <td>
-                                            <span className={`priority-badge ${getPriorityBadgeClass(task.priority)}`}>
-                                                {task.priority}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span className={`status-pill ${getTaskStatusClass(task.status)}`}>
-                                                {task.status}
-                                            </span>
-                                        </td>
-                                        <td>{formatDate(task.due_date)}</td>
-                                        <td>{formatCurrency(task.task_budget)}</td>
-                                        <td>
-                                            <div className="actions-container">
-                                                <Button
-                                                    variant="outline-secondary"
-                                                    size="sm"
-                                                    className="me-2"
-                                                    onClick={(e) => handleEdit(task, e)}
-                                                >
-                                                    <i className="bi bi-pencil"></i>
-                                                </Button>
-                                                <Button
-                                                    variant="outline-danger"
-                                                    size="sm"
-                                                    onClick={(e) => handleDelete(task.id, e)}
-                                                >
-                                                    <i className="bi bi-trash"></i>
-                                                </Button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
-                <Modal show={showModal} onHide={handleCloseModal} size="lg">
-                    <Modal.Header closeButton>
-                        <Modal.Title>{editMode ? 'Edit Task' : 'Create New Task'}</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <Form onSubmit={handleSubmit}>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Task Title</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    name="title"
-                                    value={currentTask.title}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter task title"
-                                    required
-                                />
-                            </Form.Group>
+            <Modal show={showModal} onHide={handleCloseModal} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>{editMode ? 'Edit Task' : 'Create New Task'}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form onSubmit={handleSubmit}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Task Title</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="title"
+                                value={currentTask.title}
+                                onChange={handleInputChange}
+                                placeholder="Enter task title"
+                                required
+                            />
+                        </Form.Group>
 
-                            <Form.Group className="mb-3">
-                                <Form.Label>Description</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={3}
-                                    name="description"
-                                    value={currentTask.description}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter task description"
-                                />
-                            </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Description</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={3}
+                                name="description"
+                                value={currentTask.description}
+                                onChange={handleInputChange}
+                                placeholder="Enter task description"
+                            />
+                        </Form.Group>
 
-                            <div className="row">
-                                <div className="col-md-6">
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Assignee</Form.Label>
-                                        <Form.Control
-                                            type="text"
-                                            name="assigned_to"
-                                            value={currentTask.assigned_to}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter assignee name"
-                                            required
-                                        />
-                                    </Form.Group>
-                                </div>
-                                <div className="col-md-6">
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Priority</Form.Label>
-                                        <Form.Select
-                                            name="priority"
-                                            value={currentTask.priority}
-                                            onChange={handleInputChange}
-                                            required
-                                        >
-                                            <option value="Low">Low</option>
-                                            <option value="Medium">Medium</option>
-                                            <option value="High">High</option>
-                                        </Form.Select>
-                                    </Form.Group>
-                                </div>
+                        <div className="row">
+                            <div className="col-md-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Assignee</Form.Label>
+                                    <Form.Select
+                                        name="assigned_to"
+                                        value={currentTask.assigned_to}
+                                        onChange={handleInputChange}
+                                        required
+                                    >
+                                        <option value="">Unassigned</option>
+                                        {users.map(user => (
+                                            <option key={user.id} value={user.id}>{user.name}</option>
+                                        ))}
+                                    </Form.Select>
+                                </Form.Group>
                             </div>
-
-                            <div className="row">
-                                <div className="col-md-4">
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Status</Form.Label>
-                                        <Form.Select
-                                            name="status"
-                                            value={currentTask.status}
-                                            onChange={handleInputChange}
-                                            required
-                                        >
-                                            <option value="To Do">To Do</option>
-                                            <option value="In Progress">In Progress</option>
-                                            <option value="Done">Done</option>
-                                        </Form.Select>
-                                    </Form.Group>
-                                </div>
-                                <div className="col-md-4">
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Due Date</Form.Label>
-                                        <Form.Control
-                                            type="date"
-                                            name="due_date"
-                                            value={currentTask.due_date}
-                                            onChange={handleInputChange}
-                                            required
-                                        />
-                                    </Form.Group>
-                                </div>
-                                <div className="col-md-4">
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Budget</Form.Label>
-                                        <Form.Control
-                                            type="number"
-                                            name="task_budget"
-                                            value={currentTask.task_budget}
-                                            onChange={handleInputChange}
-                                            placeholder="Enter budget amount"
-                                            required
-                                        />
-                                    </Form.Group>
-                                </div>
+                            <div className="col-md-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Priority</Form.Label>
+                                    <Form.Select
+                                        name="priority"
+                                        value={currentTask.priority}
+                                        onChange={handleInputChange}
+                                        required
+                                    >
+                                        <option value="Low">Low</option>
+                                        <option value="Medium">Medium</option>
+                                        <option value="High">High</option>
+                                    </Form.Select>
+                                </Form.Group>
                             </div>
+                        </div>
 
-                            <div className="d-flex justify-content-end">
-                                <Button variant="secondary" className="me-2" onClick={handleCloseModal}>
-                                    Close
-                                </Button>
-                                <Button variant="primary" type="submit">
-                                    {editMode ? 'Update Task' : 'Add Task'}
-                                </Button>
+                        <div className="row">
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Status</Form.Label>
+                                    <Form.Select
+                                        name="status"
+                                        value={currentTask.status}
+                                        onChange={handleInputChange}
+                                        required
+                                    >
+                                        <option value="To Do">To Do</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Done">Done</option>
+                                    </Form.Select>
+                                </Form.Group>
                             </div>
-                        </Form>
-                    </Modal.Body>
-                </Modal>
-            </div>
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Due Date</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        name="due_date"
+                                        value={currentTask.due_date}
+                                        onChange={handleInputChange}
+                                        required
+                                    />
+                                </Form.Group>
+                            </div>
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Budget</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        name="task_budget"
+                                        value={currentTask.task_budget}
+                                        onChange={handleInputChange}
+                                        placeholder="Enter budget amount"
+                                        required
+                                    />
+                                </Form.Group>
+                            </div>
+                        </div>
+
+                        <div className="d-flex justify-content-end">
+                            <Button variant="secondary" className="me-2" onClick={handleCloseModal}>
+                                Close
+                            </Button>
+                            <Button variant="primary" type="submit">
+                                {editMode ? 'Update Task' : 'Add Task'}
+                            </Button>
+                        </div>
+                    </Form>
+                </Modal.Body>
+            </Modal>
+        </div>
     );
 };
-
-export default Tasks;
