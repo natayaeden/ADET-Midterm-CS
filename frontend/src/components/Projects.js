@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import GanttChart from './projects/GanttChart';
 import '../componentStyles/Projects.css';
 
 const Projects = ({ onProjectSelect }) => {
   const [projects, setProjects] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [selectedProject, setSelectedProject] = useState(null);
   const [currentProject, setCurrentProject] = useState({
     id: null,
     name: '',
@@ -90,7 +88,7 @@ const Projects = ({ onProjectSelect }) => {
   const navigate = useNavigate();
 
   const handleProjectClick = (project) => {
-    setSelectedProject(project);
+    navigate(`/projects/${project.id}/tasks`, { state: { project } });
   };
 
   return (
@@ -107,81 +105,64 @@ const Projects = ({ onProjectSelect }) => {
           <p>No projects found. Create your first project to get started!</p>
         </div>
       ) : (
-        <>
-          <div className="table-responsive mb-4">
-            <table className="table table-hover">
-              <thead className="table-light">
-                <tr>
-                  <th>Name</th>
-                  <th>Manager</th>
-                  <th>Status</th>
-                  <th>Budget</th>
-                  <th>Due Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {projects.map((project) => (
-                  <tr
-                    key={project.id}
-                    onClick={() => handleProjectClick(project)}
-                    className={`project-row ${selectedProject?.id === project.id ? 'selected' : ''}`}
-                  >
-                    <td>{project.name}</td>
-                    <td>{project.project_manager}</td>
-                    <td>
-                      <span className={`badge ${getStatusBadgeClass(project.status)}`}>
-                        {project.status}
-                      </span>
-                    </td>
-                    <td>₱{parseFloat(project.project_budget).toLocaleString()}</td>
-                    <td>{formatDate(project.due_date)}</td>
-                    <td>
-                      <div className="actions-container" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          className="me-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(project);
-                          }}
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(project.id);
-                          }}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {selectedProject && (
-            <div className="project-details">
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h3>{selectedProject.name} - Timeline</h3>
-                <Button 
-                  variant="primary" 
-                  onClick={() => navigate(`/projects/${selectedProject.id}/tasks`, { state: { project: selectedProject } })}
+        <div className="table-responsive">
+          <table className="table table-hover">
+            <thead className="table-light">
+              <tr>
+                <th>Name</th>
+                <th>Manager</th>
+                <th>Status</th>
+                <th>Budget</th>
+                <th>Due Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {projects.map((project) => (
+                <tr
+                  key={project.id}
+                  onClick={() => handleProjectClick(project)}
+                  className="project-row"
                 >
-                  View Tasks
-                </Button>
-              </div>
-              <GanttChart project={selectedProject} />
-            </div>
-          )}
-        </>
+                  <td>{project.name}</td>
+                  <td>{project.project_manager}</td>
+                  <td>
+                    <span className={`badge ${getStatusBadgeClass(project.status)}`}>
+                      {project.status}
+                    </span>
+                  </td>
+                  <td>₱{parseFloat(project.project_budget).toLocaleString()}</td>
+                  <td>{formatDate(project.due_date)}</td>
+                  <td>
+                    <div className="actions-container" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        className="me-2"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(project);
+                        }}
+                      >
+                        <i className="bi bi-pencil"></i>
+                      </Button>
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(project.id);
+                        }}
+                      >
+                        <i className="bi bi-trash"></i>
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <Modal show={showModal} onHide={handleCloseModal} size='lg' centered>

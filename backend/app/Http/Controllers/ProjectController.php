@@ -93,30 +93,5 @@ class ProjectController extends Controller
             'budget_utilization_percentage' => $project->budget > 0 ? ($totalExpenditure / $project->budget * 100) : 0,
         ]);
     }
-
-    public function getBudget(Project $project)
-    {
-        return response()->json([
-            'totalBudget' => $project->budget,
-            'remainingBudget' => $project->budget_remaining,
-            'expenses' => $project->expenditures()->get(),
-        ]);
-    }
-
-    public function updateBudget(Request $request, Project $project)
-    {
-        $request->validate([
-            'totalBudget' => 'required|numeric|min:0',
-        ]);
-
-        $project->budget = $request->input('totalBudget');
-        $project->save();
-
-        return response()->json([
-            'totalBudget' => $project->budget,
-            'remainingBudget' => $project->budget_remaining,
-            'expenses' => $project->expenditures()->get(),
-        ]);
-    }
    
 }

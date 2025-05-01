@@ -14,10 +14,6 @@
   background-color: #f8f9fa;
 }
 
-.project-row.selected {
-  background-color: rgba(0, 123, 255, 0.1);
-}
-
 .actions-container {
   display: flex;
   justify-content: flex-end;
@@ -29,20 +25,4 @@
   color: #6c757d;
   border: 1px dashed #dee2e6;
   border-radius: 6px;
-}
-
-.project-details {
-  background-color: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-top: 20px;
-}
-
-#gantt_container {
-  background-color: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  overflow: hidden;
-  margin-top: 20px;
 }

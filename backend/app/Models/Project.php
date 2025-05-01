@@ -37,7 +37,7 @@ class Project extends Model
 
     public function expenditures()
     {
-        return $this->hasMany(\App\Models\Expenditure::class);
+        return $this->hasMany(Expenditure::class);
     }
 
     public function getTotalExpenditureAttribute()
