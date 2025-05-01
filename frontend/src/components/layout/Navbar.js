@@ -41,7 +41,7 @@ const Navbar = ({ user, onLogout }) => {
               {!sidebarCollapsed && <span>Projects</span>}
             </Link>
           </li>
-          <li className="nav-item">
+          {/* <li className="nav-item">
             <Link className={`nav-link ${isActive('/tasks') ? 'active' : ''}`} to="/tasks">
               <i className="bi bi-check2-square me-3"></i>
               {!sidebarCollapsed && <span>Tasks</span>}
@@ -52,7 +52,7 @@ const Navbar = ({ user, onLogout }) => {
               <i className="bi bi-wallet2 me-3"></i>
               {!sidebarCollapsed && <span>Budget</span>}
             </Link>
-          </li>
+          </li> */}
         </ul>
         <div className="sidebar-footer p-3">
           <div className="user-info mb-2">
