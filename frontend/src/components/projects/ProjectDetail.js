@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, Row, Col, Button, Badge, ProgressBar, Tab, Tabs, Alert } from 'react-bootstrap';
-import ProjectGanttChart from './ProjectGanttChart';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -223,8 +222,6 @@ const ProjectDetail = () => {
           </div>
         </Tab>
       </Tabs>
-
-      <ProjectGanttChart projectId={id} />
     </div>
   );
 };
