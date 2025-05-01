@@ -6,6 +6,7 @@ import '../componentStyles/Tasks.css';
 
 const Tasks = () => {
     const [tasks, setTasks] = useState([]);
+    const [users, setUsers] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [editMode, setEditMode] = useState(false);
     const [currentTask, setCurrentTask] = useState({
@@ -46,18 +47,47 @@ const Tasks = () => {
 
     useEffect(() => {
         if (project) {
-            // Load tasks for this project
-            const storedTasks = JSON.parse(localStorage.getItem(`tasks_${project.id}`)) || [];
-            setTasks(storedTasks);
+            // Fetch tasks for this project from the API
+            const fetchTasks = async () => {
+                try {
+                    const response = await fetch(`/api/projects/${project.id}/tasks`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        setTasks(data);
+                    }
+                } catch (error) {
+                    console.error('Error fetching tasks:', error);
+                }
+            };
+
+            fetchTasks();
         }
     }, [project]);
 
     useEffect(() => {
-        if (project) {
-            // Save tasks whenever they change
-            localStorage.setItem(`tasks_${project.id}`, JSON.stringify(tasks));
-        }
-    }, [tasks, project]);
+        // Fetch users for assignee dropdown
+        const fetchUsers = async () => {
+            try {
+                const response = await fetch('/api/users', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setUsers(data);
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        };
+
+        fetchUsers();
+    }, []);
 
     const handleCloseModal = () => {
         setShowModal(false);
@@ -87,52 +117,82 @@ const Tasks = () => {
         });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Check if the task is updated
-        const taskUpdated = editMode
-            ? tasks.some((task) => task.id === currentTask.id && (
-                  task.title !== currentTask.title ||
-                  task.description !== currentTask.description ||
-                  task.assigned_to !== currentTask.assigned_to ||
-                  task.priority !== currentTask.priority ||
-                  task.status !== currentTask.status ||
-                  task.due_date !== currentTask.due_date ||
-                  task.task_budget !== currentTask.task_budget
-              ))
-            : true;
+        try {
+            const url = editMode 
+                ? `/api/tasks/${currentTask.id}`
+                : `/api/projects/${project.id}/tasks`;
+            
+            const method = editMode ? 'PUT' : 'POST';
 
-        if (!taskUpdated) {
-            alert("No changes detected.");
-            return;  // Prevent closing if no updates
-        }
-
-        if (editMode) {
-            setTasks(tasks.map((task) => (task.id === currentTask.id ? currentTask : task)));
-        } else {
-            const newTask = { 
-                ...currentTask, 
-                id: Date.now(),
-                project_id: project.id  // Ensure project_id is set correctly
+            const taskData = {
+                ...currentTask,
+                project_id: project.id
             };
-            setTasks([...tasks, newTask]);
-        }
 
-        handleCloseModal();
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(taskData)
+            });
+
+            if (response.ok) {
+                const updatedTask = await response.json();
+                
+                if (editMode) {
+                    setTasks(tasks.map(task => 
+                        task.id === updatedTask.id ? updatedTask : task
+                    ));
+                } else {
+                    setTasks([...tasks, updatedTask]);
+                }
+                
+                handleCloseModal();
+            } else {
+                const error = await response.json();
+                alert(error.message || 'Error saving task');
+            }
+        } catch (error) {
+            console.error('Error saving task:', error);
+            alert('Error saving task');
+        }
     };
 
     const handleEdit = (task, e) => {
         e.stopPropagation(); // Prevent row click event from firing
-        setCurrentTask(task);
+        setCurrentTask({
+            ...task,
+            assigned_to: task.assignedTo ? task.assignedTo.id : ''
+        });
         setEditMode(true);
         setShowModal(true);
     };
 
-    const handleDelete = (id, e) => {
-        e.stopPropagation(); // Prevent row click event from firing
+    const handleDelete = async (id, e) => {
+        e.stopPropagation();
         if (window.confirm('Are you sure you want to delete this task?')) {
-            setTasks(tasks.filter((task) => task.id !== id));
+            try {
+                const response = await fetch(`/api/tasks/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    setTasks(tasks.filter(task => task.id !== id));
+                } else {
+                    alert('Error deleting task');
+                }
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                alert('Error deleting task');
+            }
         }
     };
 
@@ -275,7 +335,10 @@ const Tasks = () => {
                                             <div className="task-name">{task.title}</div>
                                             <div className="task-description text-muted">{task.description}</div>
                                         </td>
-                                        <td>{task.assigned_to}</td>
+                                        <td>
+                                            {typeof task.assigned_to === 'object' ? task.assigned_to.name : 
+                                             task.assigned_to ? users.find(u => u.id === parseInt(task.assigned_to))?.name : 'Unassigned'}
+                                        </td>
                                         <td>
                                             <span className={`priority-badge ${getPriorityBadgeClass(task.priority)}`}>
                                                 {task.priority}
@@ -348,14 +411,18 @@ const Tasks = () => {
                                 <div className="col-md-6">
                                     <Form.Group className="mb-3">
                                         <Form.Label>Assignee</Form.Label>
-                                        <Form.Control
-                                            type="text"
+                                        <Form.Select
                                             name="assigned_to"
                                             value={currentTask.assigned_to}
                                             onChange={handleInputChange}
-                                            placeholder="Enter assignee name"
-                                            required
-                                        />
+                                        >
+                                            <option value="">Select Assignee</option>
+                                            {users.map(user => (
+                                                <option key={user.id} value={user.id}>
+                                                    {user.name}
+                                                </option>
+                                            ))}
+                                        </Form.Select>
                                     </Form.Group>
                                 </div>
                                 <div className="col-md-6">
@@ -370,6 +437,7 @@ const Tasks = () => {
                                             <option value="Low">Low</option>
                                             <option value="Medium">Medium</option>
                                             <option value="High">High</option>
+                                            <option value="Urgent">Urgent</option>
                                         </Form.Select>
                                     </Form.Group>
                                 </div>
@@ -387,7 +455,8 @@ const Tasks = () => {
                                         >
                                             <option value="To Do">To Do</option>
                                             <option value="In Progress">In Progress</option>
-                                            <option value="Done">Done</option>
+                                            <option value="Under Review">Under Review</option>
+                                            <option value="Completed">Completed</option>
                                         </Form.Select>
                                     </Form.Group>
                                 </div>

@@ -71,4 +71,9 @@ class AuthController extends Controller
         return response()->json($request->user());
     }
     
+    public function getAllUsers()
+    {
+        $users = User::select('id', 'name')->get();
+        return response()->json($users);
+    }
 }
