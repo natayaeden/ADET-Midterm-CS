@@ -6,6 +6,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\ExpenditureController;
 use App\Http\Controllers\TaskCommentController;
+use App\Http\Controllers\TaskExpenditureController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -36,15 +37,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('time-entries', TimeEntryController::class);
     Route::get('/tasks/{task}/time-entries', [TimeEntryController::class, 'getTimeEntriesByTask']);
     
-    // Expenditure routes
+    // Project Expenditure routes
     Route::apiResource('expenditures', ExpenditureController::class);
     Route::get('/projects/{project}/expenditures', [ExpenditureController::class, 'getExpendituresByProject']);
+    
+    // Task Expenditure routes
+    Route::apiResource('task-expenditures', TaskExpenditureController::class);
+    Route::get('/tasks/{task}/expenditures', [TaskExpenditureController::class, 'getExpendituresByTask']);
     
     // Comment routes
     Route::apiResource('task-comments', TaskCommentController::class);
     Route::get('/tasks/{task}/comments', [TaskCommentController::class, 'getCommentsByTask']);
 
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store']);
-    
-
 });

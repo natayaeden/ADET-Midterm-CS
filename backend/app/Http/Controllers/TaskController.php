@@ -41,6 +41,7 @@ class TaskController extends Controller
             'priority' => 'required|in:Low,Medium,High,Urgent',
             'due_date' => 'nullable|date',
             'estimated_hours' => 'nullable|integer|min:0',
+            'budget' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -55,7 +56,17 @@ class TaskController extends Controller
 
     public function show(Task $task)
     {
-        $task->load(['assignedTo:id,name', 'project:id,name', 'comments.user:id,name', 'timeEntries']);
+        $task->load([
+            'assignedTo:id,name', 
+            'project:id,name', 
+            'comments.user:id,name', 
+            'timeEntries',
+            'expenditures'
+        ]);
+        
+        // Add computed attributes
+        $task->total_expenditure = $task->totalExpenditure;
+        
         return response()->json($task);
     }
 
@@ -70,6 +81,7 @@ class TaskController extends Controller
             'priority' => 'sometimes|required|in:Low,Medium,High,Urgent',
             'due_date' => 'nullable|date',
             'estimated_hours' => 'nullable|integer|min:0',
+            'budget' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {

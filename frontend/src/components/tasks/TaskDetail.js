@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import './TaskDetail.css'; 
 
 const TaskDetail = () => {
   const { id } = useParams();
@@ -8,8 +9,15 @@ const TaskDetail = () => {
   const [project, setProject] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expendituresLoading, setExpendituresLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [users, setUsers] = useState([]);
+  const [expenditures, setExpenditures] = useState([]);
+  const [newExpenditure, setNewExpenditure] = useState({
+    amount: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0]
+  });
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -17,31 +25,36 @@ const TaskDetail = () => {
     priority: '',
     due_date: '',
     assigned_to: '',
-    estimated_hours: ''
+    budget: ''
   });
   const [newComment, setNewComment] = useState('');
   const [updateError, setUpdateError] = useState(null);
 
-  useEffect(() => {
-    fetchUsers();
-    fetchTaskDetails();
-  }, [id]);
-
-  const fetchUsers = async () => {
-    const token = localStorage.getItem('token');
+  const fetchExpenditures = async (taskId) => {
+    setExpendituresLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/users', {
+      const token = localStorage.getItem('token');
+      // Fetch task expenditures
+      const expendituresResponse = await fetch(`http://localhost:8000/api/tasks/${taskId}/expenditures`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) throw new Error('Failed to fetch users');
-      const data = await response.json();
-      setUsers(data);
+      
+      if (!expendituresResponse.ok) {
+        throw new Error('Failed to fetch expenditures');
+      }
+      
+      const expendituresData = await expendituresResponse.json();
+      console.log('Fetched expenditures:', expendituresData);
+      setExpenditures(expendituresData);
     } catch (error) {
-      console.error('Failed to load users:', error);
+      console.error('Error fetching expenditures:', error);
+    } finally {
+      setExpendituresLoading(false);
     }
   };
 
-  const fetchTaskDetails = async () => {
+  const fetchTaskDetails = useCallback(async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       
@@ -71,7 +84,7 @@ const TaskDetail = () => {
         priority: taskData.priority || 'Medium',
         due_date: formattedDate,
         assigned_to: taskData.assigned_to || '',
-        estimated_hours: taskData.estimated_hours || ''
+        budget: taskData.budget || ''
       });
       
       // Fetch project details
@@ -103,6 +116,29 @@ const TaskDetail = () => {
     } finally {
       setLoading(false);
     }
+  }, [id]);
+
+  useEffect(() => {
+    console.log('Task ID changed to:', id);
+    if (id) {
+      fetchUsers();
+      fetchTaskDetails();
+      fetchExpenditures(id);
+    }
+  }, [id, fetchTaskDetails]);
+
+  const fetchUsers = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch('http://localhost:8000/api/users', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Failed to fetch users');
+      const data = await response.json();
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -118,6 +154,17 @@ const TaskDetail = () => {
     setUpdateError(null);
     
     try {
+      // Prepare the data to send to the API
+      const dataToSubmit = {
+        ...formData,
+        // Convert empty strings to appropriate types
+        budget: formData.budget === '' ? null : parseFloat(formData.budget),
+        assigned_to: formData.assigned_to === '' ? null : parseInt(formData.assigned_to, 10),
+        due_date: formData.due_date || null
+      };
+      
+      console.log('Submitting data:', dataToSubmit);
+      
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:8000/api/tasks/${id}`, {
         method: 'PUT',
@@ -125,22 +172,26 @@ const TaskDetail = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSubmit)
       });      
       
       const responseText = await response.text();
+      console.log('Response text:', responseText);
       
       let responseData;
       try {
         responseData = JSON.parse(responseText);
+        console.log('Parsed response:', responseData);
       } catch (e) {
         responseData = { message: responseText };
+        console.log('Failed to parse response as JSON');
       }
       
       if (!response.ok) {
         const errorMessage = responseData.message || 
                              responseData.error || 
                              `Server returned ${response.status}: ${response.statusText}`;
+        console.error('Error details:', responseData);
         throw new Error(errorMessage);
       }
       
@@ -196,6 +247,101 @@ const TaskDetail = () => {
         }
       } catch (error) {
         console.error('Error deleting task:', error);
+      }
+    }
+  };
+
+  // Format currency function
+  const formatCurrency = (amount) => {
+    if (!amount) return '₱0';
+    return '₱' + parseFloat(amount).toLocaleString();
+  };
+  
+  // Handle expenditure input changes
+  const handleExpenditureChange = (e) => {
+    const { name, value } = e.target;
+    setNewExpenditure({
+      ...newExpenditure,
+      [name]: value
+    });
+  };
+  
+  // Add new expenditure
+  const handleAddExpenditure = async (e) => {
+    e.preventDefault();
+    if (!newExpenditure.amount || !newExpenditure.description) return;
+    
+    // Check if the new expenditure would exceed the budget
+    const amount = parseFloat(newExpenditure.amount);
+    const newTotal = totalExpenditure + amount;
+    if (task.budget && newTotal > parseFloat(task.budget)) {
+      alert(`This expenditure would exceed the task budget of ${formatCurrency(task.budget)}. Please adjust the amount.`);
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const expenditureData = {
+        task_id: id,
+        description: newExpenditure.description,
+        amount: amount, // Use the parsed amount
+        date: newExpenditure.date
+      };
+      
+      console.log('Submitting expenditure:', expenditureData);
+      
+      const response = await fetch('http://localhost:8000/api/task-expenditures', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(expenditureData)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Expenditure error:', errorText);
+        throw new Error('Failed to add expenditure');
+      }
+      
+      // Reset form
+      setNewExpenditure({
+        amount: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+      
+      // Refresh expenditures
+      fetchExpenditures(id);
+    } catch (error) {
+      console.error('Error adding expenditure:', error);
+    }
+  };
+  
+  // Calculate total expenditures
+  const totalExpenditure = expenditures.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+
+  // Delete an expenditure
+  const handleDeleteExpenditure = async (expenditureId) => {
+    const confirm = window.confirm('Are you sure you want to delete this expenditure?');
+    
+    if (confirm) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`http://localhost:8000/api/task-expenditures/${expenditureId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          // Refresh expenditures
+          fetchExpenditures(id);
+        }
+      } catch (error) {
+        console.error('Error deleting expenditure:', error);
       }
     }
   };
@@ -342,23 +488,7 @@ const TaskDetail = () => {
                   />
                 </div>
                 
-                {/* <div className="col-md-6">
-                  <label htmlFor="estimated_hours" className="form-label">Estimated Hours</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="estimated_hours"
-                    name="estimated_hours"
-                    value={formData.estimated_hours}
-                    onChange={handleInputChange}
-                    min="0"
-                    step="0.5"
-                    placeholder="Estimated hours to complete"
-                  />
-                </div> */}
-              </div>
-              
-              <div className="mb-3">
+                <div className="col-md-6">
                 <label htmlFor="assigned_to" className="form-label">Assigned To</label>
                 <select
                   className="form-select"
@@ -372,6 +502,23 @@ const TaskDetail = () => {
                     <option key={user.id} value={user.id}>{user.name}</option>
                   ))}
                 </select>
+                </div>
+              </div>
+              
+              <div className="row mb-3">
+                <div className="col-md-12">
+                  <label htmlFor="budget" className="form-label">Allocated Budget (₱)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="budget"
+                    name="budget"
+                    value={formData.budget}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="100"
+                  />
+                </div>
               </div>
             </form>
           ) : (
@@ -403,17 +550,19 @@ const TaskDetail = () => {
                       Due Date
                       <span>{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Not set'}</span>
                     </li>
-                    {/* <li className="list-group-item d-flex justify-content-between align-items-center">
-                      Estimated Hours
-                      <span>{task.estimated_hours || 'Not estimated'}</span>
-                    </li> */}
                     <li className="list-group-item d-flex justify-content-between align-items-center">
                       Assigned To
                       <span>{
-                        typeof task.assigned_to === 'object'
+                        typeof task.assigned_to === 'object' && task.assigned_to
                           ? task.assigned_to.name
-                          : users.find(user => user.id === Number(task.assigned_to))?.name || 'Unassigned'
+                          : typeof task.assigned_to === 'number' || (task.assigned_to && !isNaN(Number(task.assigned_to)))
+                            ? (users.find(user => user.id === Number(task.assigned_to))?.name || 'Unknown User') 
+                            : 'Unassigned'
                       }</span>
+                    </li>
+                    <li className="list-group-item d-flex justify-content-between align-items-center">
+                      Allocated Budget
+                      <span className="fw">{formatCurrency(task.budget || 0)}</span>
                     </li>
                   </ul>
                 </div>
@@ -424,7 +573,7 @@ const TaskDetail = () => {
       </div>
       
       {/* Comments Section */}
-      <div className="card">
+      <div className="card mb-4">
         <div className="card-header">
           <h5 className="mb-0">Comments ({comments.length})</h5>
         </div>
@@ -471,6 +620,146 @@ const TaskDetail = () => {
               Add Comment
             </button>
           </form>
+        </div>
+      </div>
+      
+      {/* Task Expenditures Section */}
+      <div className="card mt-4">
+        <div className="card-header d-flex justify-content-between align-items-center">
+          <h5 className="mb-0">
+            Task Expenditures
+            <button 
+              onClick={() => fetchExpenditures(id)} 
+              className="btn btn-sm btn-outline-secondary ms-2"
+              disabled={expendituresLoading}
+            >
+              <i className={`bi ${expendituresLoading ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'}`}></i>
+            </button>
+          </h5>
+          <div className="budget-badges">
+            <span className="badge bg-secondary me-2">
+              Budget: {formatCurrency(task.budget || 0)}
+            </span>
+            <span className="badge bg-info me-2">
+              Spent: {formatCurrency(totalExpenditure)}
+            </span>
+            <span className={`badge ${totalExpenditure > (task.budget || 0) ? 'bg-danger' : 'bg-success'} me-2`}>
+              Remaining: {formatCurrency((task.budget || 0) - totalExpenditure)}
+            </span>
+          </div>
+        </div>
+        <div className="card-body">
+          {/* Add Expenditure Form */}
+          <form onSubmit={handleAddExpenditure} className="mb-4">
+            <div className="row g-3">
+              <div className="col-md-3">
+                <div className="form-group">
+                  <label htmlFor="amount" className="form-label">Amount (₱)</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="amount"
+                    name="amount"
+                    value={newExpenditure.amount}
+                    onChange={handleExpenditureChange}
+                    placeholder="Enter amount"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="form-group">
+                  <label htmlFor="expDescription" className="form-label">Description</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="expDescription"
+                    name="description"
+                    value={newExpenditure.description}
+                    onChange={handleExpenditureChange}
+                    placeholder="Enter expense description"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="col-md-3">
+                <div className="form-group">
+                  <label htmlFor="date" className="form-label">Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="date"
+                    name="date"
+                    value={newExpenditure.date}
+                    onChange={handleExpenditureChange}
+                  />
+                </div>
+              </div>
+              <div className="col-12 mt-3">
+                <button 
+                  type="submit" 
+                  className="btn btn-primary float-end"
+                  disabled={task.budget && (totalExpenditure + parseFloat(newExpenditure.amount || 0) > parseFloat(task.budget))}
+                >
+                  <i className="bi bi-plus-circle me-1"></i>
+                  Add Expenditure
+                </button>
+                {task.budget && (totalExpenditure + parseFloat(newExpenditure.amount || 0) > parseFloat(task.budget)) && (
+                  <div className="text-danger float-end me-3 mt-2">
+                    This expenditure would exceed the budget limit.
+                  </div>
+                )}
+              </div>
+            </div>
+          </form>
+
+          {/* Expenditures List */}
+          {expendituresLoading ? (
+            <div className="text-center py-4">
+              <div className="spinner-border text-primary"></div>
+              <p className="mt-2">Loading expenditures...</p>
+            </div>
+          ) : expenditures.length === 0 ? (
+            <div className="text-center py-4 text-muted">
+              <i className="bi bi-receipt fs-1 d-block mb-2"></i>
+              <p>No expenditures recorded yet</p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Date</th>
+                    <th className="text-end">Amount</th>
+                    <th className="text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {expenditures.map(exp => (
+                    <tr key={exp.id}>
+                      <td>{exp.description}</td>
+                      <td>{new Date(exp.date).toLocaleDateString()}</td>
+                      <td className="text-end text-primary fw-bold">{formatCurrency(exp.amount)}</td>
+                      <td className="text-center">
+                        <button 
+                          onClick={() => handleDeleteExpenditure(exp.id)} 
+                          className="btn btn-sm btn-outline-danger"
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="table-light">
+                    <td colSpan="2" className="fw-bold">Total</td>
+                    <td className="text-end fw-bold">{formatCurrency(totalExpenditure)}</td>
+                    <td></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </div>
