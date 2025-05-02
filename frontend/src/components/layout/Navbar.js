@@ -55,14 +55,6 @@ const Navbar = ({ user, onLogout }) => {
           </li> */}
         </ul>
         <div className="sidebar-footer p-3">
-          <div className="user-info mb-2">
-            {!sidebarCollapsed && user && (
-              <div className="user-details">
-                <span className="user-name">{user.name}</span>
-                <small className="user-role text-muted">Project Manager</small>
-              </div>
-            )}
-          </div>
           <button onClick={onLogout} className="btn btn-link logout-btn p-2">
             <i className="bi bi-box-arrow-right"></i>
             {!sidebarCollapsed && <span className="ms-3">Sign Out</span>}
@@ -82,8 +74,6 @@ const Navbar = ({ user, onLogout }) => {
               <div className="page-title px-3">
                 {location.pathname === '/dashboard' && <h5 className="mb-0">Dashboard</h5>}
                 {location.pathname.startsWith('/projects') && <h5 className="mb-0">Projects</h5>}
-                {location.pathname.startsWith('/tasks') && <h5 className="mb-0">Tasks</h5>}
-                {location.pathname.startsWith('/budget') && <h5 className="mb-0">Budget</h5>}
               </div>
             </div>
             <div className="d-flex align-items-center">
@@ -103,12 +93,11 @@ const Navbar = ({ user, onLogout }) => {
                   <li><a className="dropdown-item px-3 py-2 text-center text-muted" href="#">See all notifications</a></li>
                 </ul>
               </div>
-              {/* User Avatar Dropdown */}
+              {/* User Avatar & Name*/}
               <div className="dropdown">
-                <button className="btn btn-link dropdown-toggle user-dropdown p-2" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                  <div className="avatar-circle">
-                    {user && user.name && user.name.charAt(0).toUpperCase()}
-                  </div>
+                <button className="btn btn-link dropdown-toggle d-flex align-items-center user-dropdown p-2 text-decoration-none" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i className="bi bi-person-circle fs-4 me-2"></i>
+                    <span className="fw-medium text-dark">{user?.name}</span>
                 </button>
                 <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                   <li><a className="dropdown-item px-3 py-2" href="#"><i className="bi bi-person me-2"></i>Profile</a></li>
