@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Table, Button, Modal, Form, Badge, Alert, Spinner, Card, Container, Row, Col } from 'react-bootstrap';
 
 const Projects = () => {
@@ -13,18 +13,21 @@ const Projects = () => {
     description: '',
     user_id: '',
     budget: '',
-    status: 'In Queue',
+    status: 'To Do',
     start_date: '',
-    due_date: ''
+    due_date: '',
+    completed_date: ''
   });
   const [editMode, setEditMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [currentUser, setCurrentUser] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchProjects();
     fetchProjectManagers();
+    fetchCurrentUser();
   }, []);
 
   const fetchProjects = async () => {
@@ -37,12 +40,19 @@ const Projects = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch projects');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to fetch projects');
+        } else {
+          throw new Error(`Server error: ${response.status}`);
+        }
       }
 
       const data = await response.json();
       setProjects(data);
     } catch (err) {
+      console.error('Error fetching projects:', err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -69,6 +79,26 @@ const Projects = () => {
     }
   };
 
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch current user');
+      }
+
+      const data = await response.json();
+      setCurrentUser(data);
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+    }
+  };
+
   const handleCloseModal = () => {
     setShowModal(false);
     setEditMode(false);
@@ -77,15 +107,59 @@ const Projects = () => {
       description: '',
       user_id: '',
       budget: '',
-      status: 'In Queue',
+      status: 'To Do',
       start_date: '',
-      due_date: ''
+      due_date: '',
+      completed_date: ''
     });
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setCurrentProject({ ...currentProject, [name]: value });
+    
+    if (name === 'status') {
+      const today = new Date().toISOString().split('T')[0];
+      setCurrentProject({ 
+        ...currentProject, 
+        [name]: value,
+        completed_date: value === 'Completed' ? today : null
+      });
+    } else if (name === 'start_date') {
+      // If start date is after due date, update due date to start date
+      if (currentProject.due_date && value > currentProject.due_date) {
+        setCurrentProject({ 
+          ...currentProject, 
+          [name]: value,
+          due_date: value 
+        });
+      } else {
+        setCurrentProject({ ...currentProject, [name]: value });
+      }
+    } else if (name === 'due_date') {
+      // If due date is before start date, show error
+      if (currentProject.start_date && value < currentProject.start_date) {
+        setError('Due date cannot be earlier than start date');
+        return;
+      }
+      setCurrentProject({ ...currentProject, [name]: value });
+    } else {
+      setCurrentProject({ ...currentProject, [name]: value });
+    }
+  };
+
+  const handleShowModal = () => {
+    setCurrentProject({
+      name: '',
+      description: '',
+      user_id: currentUser ? currentUser.id : '',
+      budget: '',
+      status: 'To Do',
+      start_date: '',
+      due_date: '',
+      completed_date: ''
+    });
+    setEditMode(false);
+    setShowModal(true);
   };
 
   const handleSubmit = async (e) => {
@@ -93,6 +167,17 @@ const Projects = () => {
 
     try {
       const token = localStorage.getItem('token');
+      const projectData = {
+        name: currentProject.name,
+        description: currentProject.description,
+        user_id: currentUser ? currentUser.id : currentProject.user_id,
+        budget: currentProject.budget,
+        status: editMode ? currentProject.status : 'To Do',
+        start_date: currentProject.start_date,
+        due_date: currentProject.due_date,
+        completed_date: currentProject.status === 'Completed' ? currentProject.completed_date : null
+      };
+
       const url = editMode
         ? `http://localhost:8000/api/projects/${currentProject.id}`
         : 'http://localhost:8000/api/projects';
@@ -105,17 +190,33 @@ const Projects = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(currentProject)
+        body: JSON.stringify(projectData)
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to save project');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          throw new Error(data.message || 'Failed to save project');
+        } else {
+          throw new Error(`Server error: ${response.status}`);
+        }
       }
 
-      fetchProjects();
+      const updatedProject = await response.json();
+      
+      // Update the projects list with the new data
+      if (editMode) {
+        setProjects(projects.map(p => 
+          p.id === currentProject.id ? updatedProject : p
+        ));
+      } else {
+        setProjects([...projects, updatedProject]);
+      }
+
       handleCloseModal();
     } catch (err) {
+      console.error('Error saving project:', err);
       setError(err.message);
     }
   };
@@ -129,7 +230,8 @@ const Projects = () => {
       budget: project.budget,
       status: project.status,
       start_date: formatDateInput(project.start_date),
-      due_date: formatDateInput(project.due_date)
+      due_date: formatDateInput(project.due_date),
+      completed_date: project.completed_date || (project.status === 'Completed' ? new Date().toISOString().split('T')[0] : null)
     });
     setEditMode(true);
     setShowModal(true);
@@ -159,18 +261,57 @@ const Projects = () => {
     }
   };
 
+  const handleCancel = async (project) => {
+    if (!window.confirm('Are you sure you want to cancel this project?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/projects/${project.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: project.name,
+          description: project.description,
+          user_id: project.user_id,
+          budget: project.budget,
+          status: 'Cancelled',
+          start_date: project.start_date,
+          due_date: project.due_date
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to cancel project');
+      }
+
+      // Update the project in the local state
+      setProjects(projects.map(p => 
+        p.id === project.id ? { ...p, status: 'Cancelled' } : p
+      ));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleProjectClick = (projectId) => {
-    navigate(`/projects/${projectId}`);
+    const project = projects.find(p => p.id === projectId);
+    if (project) {
+      navigate(`/projects/${projectId}`);
+    }
   };
 
   const getStatusBadgeClass = (status) => {
     switch (status) {
-      case 'In Queue':
-        return 'bg-secondary';
       case 'To Do':
-        return 'bg-info';
-      case 'In Progress':
         return 'bg-primary';
+      case 'In Progress':
+        return 'bg-warning';
       case 'Completed':
         return 'bg-success';
       default:
@@ -204,13 +345,40 @@ const Projects = () => {
     return diffDays;
   };
 
-  const getDueDateColor = (dueDate) => {
-    const daysRemaining = calculateDaysRemaining(dueDate);
+  const getDueDateStatus = (project) => {
+    const daysRemaining = calculateDaysRemaining(project.due_date);
+    if (daysRemaining === null) return null;
+
+    if (project.status === 'Completed') {
+      const completionDate = project.completed_date || new Date().toISOString().split('T')[0];
+      return `Completed on ${formatDate(completionDate)}`;
+    }
+
+    if (daysRemaining < 0) {
+      return `${Math.abs(daysRemaining)} day(s) overdue`;
+    }
+
+    if (daysRemaining === 0) {
+      return 'Due today';
+    }
+
+    return `${daysRemaining} day(s) remaining`;
+  };
+
+  const getDueDateColor = (project) => {
+    const daysRemaining = calculateDaysRemaining(project.due_date);
     if (daysRemaining === null) return '';
-    
-    if (daysRemaining < 0) return 'text-danger fw-bold';
-    if (daysRemaining <= 3) return 'text-warning fw-bold';
-    return 'text-success';
+    if (project.status === 'Completed') {
+      if (daysRemaining < 0) {
+        return 'text-danger fw-semibold';
+      }
+      return 'text-success fw-semibold';
+    }
+    if (daysRemaining < 0) return 'text-danger';
+    if (daysRemaining === 0) return 'text-primary';
+    if (daysRemaining <= 3) return 'text-warning';
+    if (daysRemaining > 3) return 'text-dark';
+    return 'text-dark';
   };
 
   // Filter and search projects
@@ -243,7 +411,7 @@ const Projects = () => {
             <Col xs="auto">
               <Button 
                 variant="primary" 
-                onClick={() => setShowModal(true)}
+                onClick={handleShowModal}
                 className="fw-semibold"
               >
                 <i className="bi bi-plus-circle me-2"></i>New Project
@@ -273,7 +441,6 @@ const Projects = () => {
                 aria-label="Filter by status"
               >
                 <option value="">All Statuses</option>
-                <option value="In Queue">In Queue</option>
                 <option value="To Do">To Do</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
@@ -314,7 +481,7 @@ const Projects = () => {
                     <th>Status</th>
                     <th>Budget</th>
                     <th>Due Date</th>
-                    <th className="text-end pe-4">Actions</th>
+                    <th className="text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -336,10 +503,7 @@ const Projects = () => {
                       <td>
                         {project.manager ? (
                           <div className="d-flex align-items-center">
-                            <div className="avatar-circle me-2 bg-primary">
-                              {project.manager.name.charAt(0).toUpperCase()}
-                            </div>
-                            {project.manager.name}
+                            {project.manager.name.toUpperCase()}
                           </div>
                         ) : (
                           <span className="text-muted">Unassigned</span>
@@ -348,48 +512,48 @@ const Projects = () => {
                       <td>
                         <Badge className={`${getStatusBadgeClass(project.status)} py-2 px-3 rounded-pill`}>
                           {project.status}
-                        </Badge>
+                        </Badge>     
                       </td>
                       <td>
                         <span className="fw-semibold">₱{parseFloat(project.budget).toLocaleString()}</span>
                       </td>
                       <td>
-                        <div className={getDueDateColor(project.due_date)}>
+                        <div className={getDueDateColor(project)}>
                           {formatDate(project.due_date)}
                           {calculateDaysRemaining(project.due_date) !== null && (
                             <div className="small">
-                              {calculateDaysRemaining(project.due_date) < 0 
-                                ? `${Math.abs(calculateDaysRemaining(project.due_date))} days overdue` 
-                                : calculateDaysRemaining(project.due_date) === 0 
-                                  ? 'Due today'
-                                  : `${calculateDaysRemaining(project.due_date)} days remaining`}
+                              {getDueDateStatus(project)}
                             </div>
                           )}
                         </div>
                       </td>
                       <td className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
-                        <Button
-                          variant="light"
-                          size="sm"
-                          className="me-2 border"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(project);
-                          }}
-                        >
-                          <i className="bi bi-pencil"></i>
-                        </Button>
-                        <Button
-                          variant="light"
-                          size="sm"
-                          className="border text-danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(project.id);
-                          }}
-                        >
-                          <i className="bi bi-trash"></i>
-                        </Button>
+                        {project.status !== 'Cancelled' && (
+                          <>
+                            <Button
+                              variant="light"
+                              size="sm"
+                              className="me-2 border"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(project);
+                              }}
+                            >
+                              <i className="bi bi-pencil"></i>
+                            </Button>
+                            <Button
+                              variant="light"
+                              size="sm"
+                              className="border text-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(project.id);
+                              }}
+                            >
+                              <i className="bi bi-trash"></i>
+                            </Button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -432,20 +596,13 @@ const Projects = () => {
               <div className="col-md-6 mb-3">
                 <Form.Group>
                   <Form.Label className="fw-semibold">Project Manager</Form.Label>
-                  <Form.Select
+                  <Form.Control
+                    type="text"
                     name="user_id"
-                    value={currentProject.user_id}
-                    onChange={handleInputChange}
-                    required
-                    className="form-select-modern"
-                  >
-                    <option value="">Select Project Manager</option>
-                    {projectManagers.map((manager) => (
-                      <option key={manager.id} value={manager.id}>
-                        {manager.name}
-                      </option>
-                    ))}
-                  </Form.Select>
+                    value={currentUser ? currentUser.name : ''}
+                    readOnly
+                    className="form-control-modern bg-light"
+                  />
                 </Form.Group>
               </div>
               <div className="col-12 mb-3">
@@ -487,8 +644,8 @@ const Projects = () => {
                     onChange={handleInputChange}
                     required
                     className="form-select-modern"
+                    disabled={!editMode}
                   >
-                    <option value="In Queue">In Queue</option>
                     <option value="To Do">To Do</option>
                     <option value="In Progress">In Progress</option>
                     <option value="Completed">Completed</option>
@@ -504,8 +661,14 @@ const Projects = () => {
                     value={currentProject.start_date}
                     onChange={handleInputChange}
                     required
+                    max={currentProject.due_date || undefined}
                     className="form-control-modern"
                   />
+                  {currentProject.due_date && (
+                    <Form.Text className="text-muted">
+                      Must be before (or on) the due date
+                    </Form.Text>
+                  )}
                 </Form.Group>
               </div>
               <div className="col-md-6 mb-3">
@@ -517,8 +680,14 @@ const Projects = () => {
                     value={currentProject.due_date}
                     onChange={handleInputChange}
                     required
+                    min={currentProject.start_date || undefined}
                     className="form-control-modern"
                   />
+                  {currentProject.start_date && (
+                    <Form.Text className="text-muted">
+                      Must be on or after the start date
+                    </Form.Text>
+                  )}
                 </Form.Group>
               </div>
             </div>
@@ -541,43 +710,6 @@ const Projects = () => {
           </Form>
         </Modal.Body>
       </Modal>
-
-      {/* Add CSS for custom styling */}
-      <style jsx>{`
-        .form-control-modern, .form-select-modern {
-          padding: 0.625rem 1rem;
-          border-radius: 0.375rem;
-          border-color: #dee2e6;
-        }
-        
-        .form-control-modern:focus, .form-select-modern:focus {
-          box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
-        }
-        
-        .avatar-circle {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-        }
-        
-        .hover-highlight:hover {
-          background-color: #f8f9fa;
-        }
-        
-        th {
-          font-weight: 600;
-          color: #495057;
-        }
-        
-        .table > :not(caption) > * > * {
-          padding: 1rem 0.5rem;
-        }
-      `}</style>
     </Container>
   );
 };

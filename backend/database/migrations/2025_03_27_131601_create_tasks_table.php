@@ -6,7 +6,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
@@ -16,9 +19,8 @@ return new class extends Migration
             $table->foreignId('assigned_to')->nullable()->constrained('users')->onDelete('set null');
             $table->enum('status', ['To Do', 'In Progress', 'Under Review', 'Completed'])->default('To Do');
             $table->enum('priority', ['Low', 'Medium', 'High', 'Urgent'])->default('Medium');
+            $table->date('start_date')->nullable();
             $table->date('due_date')->nullable();
-            $table->integer('estimated_hours')->nullable();
-            $table->decimal('budget', 10, 2)->nullable(); // Add budget field
             $table->timestamps();
         });
     }

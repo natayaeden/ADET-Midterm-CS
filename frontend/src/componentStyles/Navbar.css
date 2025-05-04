@@ -188,6 +188,16 @@
   display: none;
 }
 
+.user-dropdown,
+.user-dropdown:hover,
+.user-dropdown:focus {
+  text-decoration: none !important;
+}
+
+.user-dropdown span {
+  text-decoration: none !important;
+}
+
 /* Main Content Styles */
 main.container {
   padding-top: calc(var(--top-navbar-height) + 1.5rem) !important;

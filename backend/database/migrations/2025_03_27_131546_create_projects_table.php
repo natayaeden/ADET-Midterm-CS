@@ -14,7 +14,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->foreignId('user_id')->comment('Project Manager')->constrained()->onDelete('cascade');
             $table->decimal('budget', 15, 2)->default(0);
-            $table->enum('status', ['In Queue', 'To Do', 'In Progress', 'Completed'])->default('In Queue');
+            $table->enum('status', ['To Do', 'In Progress', 'Completed'])->default('To Do');
             $table->date('start_date');
             $table->date('due_date');
             $table->timestamps();

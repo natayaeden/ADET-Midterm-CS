@@ -6,6 +6,7 @@ use App\Models\Project;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Response;
 
 class ProjectController extends Controller
 {
@@ -22,7 +23,7 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
             'user_id' => 'required|exists:users,id',
             'budget' => 'required|numeric|min:0',
-            'status' => 'required|in:In Queue,To Do,In Progress,Completed',
+            'status' => 'required|in:To Do,In Progress,Completed',
             'start_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:start_date',
         ]);
@@ -50,7 +51,7 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
             'user_id' => 'sometimes|required|exists:users,id',
             'budget' => 'sometimes|required|numeric|min:0',
-            'status' => 'sometimes|required|in:In Queue,To Do,In Progress,Completed',
+            'status' => 'sometimes|required|in:To Do,In Progress,Completed',
             'start_date' => 'sometimes|required|date',
             'due_date' => 'sometimes|required|date|after_or_equal:start_date',
         ]);

@@ -57,10 +57,7 @@ const Dashboard = ({ user }) => {
   return (
     <div className="dashboard">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h1>Welcome, {user?.name}</h1>
-        <Link to="/projects/new" className="btn btn-primary">
-          <i className="bi bi-plus-circle me-2"></i>New Project
-        </Link>
+        <h1>Welcome, {user?.name.charAt(0).toUpperCase() + user?.name.slice(1)}!</h1>
       </div>
       
       {/* Stats Cards */}

@@ -1,4 +1,3 @@
-// components/budget/Budget.js
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import BudgetForm from './BudgetForm';
@@ -116,7 +115,13 @@ const Budget = () => {
   
   return (
     <div className="budget-container">
-      <h1 className="mb-4">Project Budget</h1>
+      {/* Header row with title and back button */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1 className="mb-0">Project Budget</h1>
+        <button className="btn btn-outline-secondary" onClick={() => window.history.back()}>
+          <i className="bi bi-arrow-left me-2"></i>Back
+        </button>
+      </div>
       
       {error && (
         <div className="alert alert-danger" role="alert">
@@ -132,7 +137,7 @@ const Budget = () => {
               <h5 className="card-title">Total Budget</h5>
               <h2 className="text-primary">${budget.totalBudget.toFixed(2)}</h2>
               <button 
-                className="btn btn-sm btn-outline-primary mt-2"
+                className="btn btn-sm btn-outline-primary mt-1"
                 data-bs-toggle="modal"
                 data-bs-target="#updateBudgetModal"
               >
@@ -149,7 +154,7 @@ const Budget = () => {
               <h2 className="text-danger">
                 ${(budget.totalBudget - budget.remainingBudget).toFixed(2)}
               </h2>
-              <p className="text-muted mb-0">
+              <p className="text-muted mt-3 mb-1">
                 {budget.expenses.length} expense(s)
               </p>
             </div>
@@ -163,7 +168,7 @@ const Budget = () => {
               <h2 className={`${budget.remainingBudget < 0 ? 'text-danger' : 'text-success'}`}>
                 ${budget.remainingBudget.toFixed(2)}
               </h2>
-              <p className="text-muted mb-0">
+              <p className="text-muted mt-3 mb-1">
                 {((budget.remainingBudget / budget.totalBudget) * 100).toFixed(1)}% remaining
               </p>
             </div>
@@ -172,11 +177,11 @@ const Budget = () => {
       </div>
       
       <div className="row">
-        <div className="col-md-5">
+        {/* <div className="col-md-5">
           <BudgetForm onAddExpense={addExpense} />
-        </div>
+        </div> */}
         
-        <div className="col-md-7">
+        <div className="col-md-12">
           <ExpenseList 
             expenses={budget.expenses} 
             onDeleteExpense={deleteExpense} 
@@ -185,7 +190,7 @@ const Budget = () => {
       </div>
       
       {/* Update Budget Modal */}
-      <div className="modal fade" id="updateBudgetModal" tabIndex="-1" aria-labelledby="updateBudgetModalLabel" aria-hidden="true">
+      {/* <div className="modal fade" id="updateBudgetModal" tabIndex="-1" aria-labelledby="updateBudgetModalLabel" aria-hidden="true">
         <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
@@ -223,7 +228,7 @@ const Budget = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };

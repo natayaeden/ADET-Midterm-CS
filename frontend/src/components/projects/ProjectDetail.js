@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Card, Row, Col, Button, Badge, ProgressBar, Tab, Tabs, Alert } from 'react-bootstrap';
+import { Card, Row, Col, Button, Badge, ProgressBar, Alert, Table, Modal } from 'react-bootstrap';
+import GanttChart from './ProjectTimeline';
 
 const ProjectDetail = () => {
   const { id } = useParams();
@@ -9,11 +10,26 @@ const ProjectDetail = () => {
   const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [taskExpenditures, setTaskExpenditures] = useState([]);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
 
   useEffect(() => {
-    fetchProject();
-    fetchStatistics();
+    const loadData = async () => {
+      await fetchProject();
+      await fetchStatistics();
+      await fetchTaskExpenditures();
+    };
+    loadData();
   }, [id]);
+
+  useEffect(() => {
+    if (project && statistics) {
+      setStatistics(prevStats => ({
+        ...prevStats,
+        budget_remaining: (project.budget ?? 0) - (prevStats.total_expenditure ?? 0)
+      }));
+    }
+  }, [project, statistics?.total_expenditure]);
 
   const fetchProject = async () => {
     try {
@@ -57,6 +73,56 @@ const ProjectDetail = () => {
     }
   };
 
+  const fetchTaskExpenditures = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/projects/${id}/tasks`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch task expenditures');
+      }
+      
+      const tasks = await response.json();
+      
+      let allExpenditures = [];
+      for (const task of tasks) {
+        const expendituresResponse = await fetch(`http://localhost:8000/api/tasks/${task.id}/expenditures`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const expenditures = await expendituresResponse.json();
+        expenditures.forEach(exp => {
+          allExpenditures.push({
+            expenseDescription: exp.description || 'No description',
+            taskName: task.title,
+            taskId: task.id,
+            amount: exp.amount
+          });
+        });
+      }
+      setTaskExpenditures(allExpenditures);
+      
+      // Update statistics with the new total expenditure
+      const totalProjectExpenditure = allExpenditures.reduce((sum, exp) => sum + parseFloat(exp.amount), 0);
+      
+      const totalTasks = tasks.length;
+      const completedTasks = tasks.filter(task => task.status === 'Completed').length;
+      const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+      
+      setStatistics(prevStats => ({
+        ...prevStats,
+        total_expenditure: totalProjectExpenditure,
+        completion_percentage: completionPercentage
+      }));
+      
+    } catch (err) {
+      console.error('Error fetching task expenditures:', err);
+    }
+  };
+
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'In Queue':
@@ -82,6 +148,10 @@ const ProjectDetail = () => {
     });
   };
 
+  const formatCurrency = (amount) => {
+    return `₱${parseFloat(amount).toLocaleString()}`;
+  };
+
   if (loading) {
     return <div className="text-center mt-5">Loading project details...</div>;
   }
@@ -99,6 +169,7 @@ const ProjectDetail = () => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>{project.name}</h2>
         <div>
+          {/* Navigates to project's tasks page */}
           <Button 
             variant="outline-primary" 
             className="me-2"
@@ -106,13 +177,25 @@ const ProjectDetail = () => {
           >
             <i className="bi bi-list-task me-1"></i> Tasks
           </Button>
-          <Button 
-            variant="outline-success" 
+
+          {/* Opens modal for project timeline */}
+          <Button
+            variant="outline-danger"
             className="me-2"
-            onClick={() => navigate(`/projects/${id}/budget`)}
+            onClick={() => setShowTimelineModal(true)}
           >
-            <i className="bi bi-cash-coin me-1"></i> Budget
-          </Button>
+            <i className="bi bi-calendar-date me-1"></i> Timeline
+          </Button>          
+          <Modal show={showTimelineModal} onHide={() => setShowTimelineModal(false)} size="xl">
+            <Modal.Header closeButton>
+              <Modal.Title>Project Timeline</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <GanttChart project={project} />
+            </Modal.Body>
+          </Modal>
+          
+          {/* Navigates to projects page */}
           <Button 
             variant="outline-secondary"
             onClick={() => navigate('/projects')}
@@ -124,6 +207,7 @@ const ProjectDetail = () => {
 
       <Card className="mb-4">
         <Card.Body>
+          {/* Project Description */}
           <Row>
             <Col md={8}>
               <h5>Description</h5>
@@ -132,14 +216,14 @@ const ProjectDetail = () => {
             <Col md={4}>
               <div className="project-meta">
                 <p>
+                <p>
+                  <strong>Project Manager:</strong>{' '}
+                  {project.manager ? project.manager.name : 'Unassigned'}
+                </p>
                   <strong>Status:</strong>{' '}
                   <Badge className={getStatusBadgeClass(project.status)}>
                     {project.status}
                   </Badge>
-                </p>
-                <p>
-                  <strong>Manager:</strong>{' '}
-                  {project.manager ? project.manager.name : 'Unassigned'}
                 </p>
                 <p>
                   <strong>Start Date:</strong> {formatDate(project.start_date)}
@@ -148,80 +232,128 @@ const ProjectDetail = () => {
                   <strong>Due Date:</strong> {formatDate(project.due_date)}
                 </p>
                 <p>
-                  <strong>Budget:</strong> ₱{parseFloat(project.budget).toLocaleString()}
+                  <strong>Budget:</strong> {formatCurrency(project?.budget ?? 0)}
                 </p>
               </div>
             </Col>
           </Row>
+
+          {/* Project Progress */}
+          <Row>
+            <div className="card-body">
+              <h6 className="mb-3">Project Completion</h6>
+              <ProgressBar 
+                now={statistics?.completion_percentage ?? 0}
+                label={`${Math.round(statistics?.completion_percentage ?? 0)}%`}
+                className="mt-2"
+                variant={statistics?.completion_percentage > 90 ? "success" : "primary"} 
+              />
+            </div>
+          </Row>
         </Card.Body>
       </Card>
 
-      {statistics && (
-        <div className="project-dashboard mb-4">
-          <h4 className="mb-3">Project Progress</h4>
-          <Row>
-            <Col md={6} className="mb-3">
-              <Card>
-                <Card.Body>
-                  <Card.Title>Task Completion</Card.Title>
-                  <h3 className="display-6 text-center">
-                    {statistics.completed_tasks} / {statistics.total_tasks}
-                  </h3>
-                  <ProgressBar 
-                    now={statistics.completion_percentage} 
-                    label={`${Math.round(statistics.completion_percentage)}%`} 
-                    className="mt-2" 
-                    variant="success" 
-                  />
-                  <Card.Text className="text-center mt-2">
-                    <small className="text-muted">
-                      {Math.round(statistics.completion_percentage)}% Complete
-                    </small>
-                  </Card.Text>
-                </Card.Body>
-              </Card>
+      {/* Budget Section */}
+      <Card className="mt-4">
+        <Card.Header className="bg-light">
+          <div className="d-flex justify-content-between align-items-center">
+            <h3 className="mb-0">Budget Overview</h3>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          <Row className="mb-4">
+            <Col md={4}>
+              <div className="card bg-light h-100">
+                <div className="card-body text-center">
+                  <h5 className="card-title">Total Budget</h5>
+                  <h2 className="text-primary">{formatCurrency(project?.budget ?? 0)}</h2>
+                  <Button variant="outline-primary" className="btn-sm mt-1">
+                    <i className="bi bi-pencil-square me-1"></i>
+                    Edit
+                  </Button>
+                </div>
+              </div>
             </Col>
-            <Col md={6} className="mb-3">
-              <Card>
-                <Card.Body>
-                  <Card.Title>Budget Utilization</Card.Title>
-                  <h3 className="display-6 text-center">
-                    ₱{parseFloat(statistics.total_expenditure).toLocaleString()} / ₱{parseFloat(project.budget).toLocaleString()}
-                  </h3>
-                  <ProgressBar 
-                    now={statistics.budget_utilization_percentage} 
-                    label={`${Math.round(statistics.budget_utilization_percentage)}%`} 
-                    className="mt-2" 
-                    variant={statistics.budget_utilization_percentage > 90 ? "danger" : "info"} 
-                  />
-                  <Card.Text className="text-center mt-2">
-                    <small className="text-muted">
-                      ₱{parseFloat(statistics.budget_remaining).toLocaleString()} Remaining
-                    </small>
-                  </Card.Text>
-                </Card.Body>
-              </Card>
+            
+            <Col md={4}>
+              <div className="card bg-light h-100">
+                <div className="card-body text-center">
+                  <h5 className="card-title">Spent</h5>
+                  <h2 className="text-muted">
+                    {formatCurrency(statistics?.total_expenditure ?? 0)}
+                  </h2>
+                  <p className="text-muted mt-3 mb-1">
+                    across {taskExpenditures.length} expenditure(s)
+                  </p>
+                </div>
+              </div>
             </Col>
-          </Row>
-        </div>
-      )}
+            
+            <Col md={4}>
+              <div className="card bg-light h-100">
+                <div className="card-body text-center">
+                  <h5 className="card-title">Remaining</h5>
+                  <h2 className={`${statistics?.budget_remaining < 0 ? 'text-danger' : 'text-success'}`}>
+                    {formatCurrency(statistics?.budget_remaining ?? project?.budget ?? 0)}
+                  </h2>
+                  <p className="text-muted mt-3 mb-1">
+                      {statistics?.budget_remaining < 0 && (
+                        <span className="text-danger">! OVER BUDGET !</span>
+                      )}
+                      {statistics?.budget_remaining >= 0 && (
+                        <span className="text-success">balance is stable</span>
+                      )}
+                  </p>
+                </div>
+              </div>
+            </Col>
+          </Row>          
 
-      <Tabs className="mb-3">
-        <Tab eventKey="tasks" title="Recent Tasks">
-          <div className="p-3 bg-light rounded">
-            <p className="text-center">
-              <Link to={`/projects/${id}/tasks`} className="btn btn-primary">
-                View All Tasks
-              </Link>
-            </p>
+          {/* Expense History Table */}
+          <div className="row"> 
+            <div className="col-md-12">
+              <div className="card bg-light mb-4">
+                <div className="card-body">
+                  <h5 className="mb-3">Budget History</h5>
+                  <div className="table-responsive">
+                    <Table hover className="align-middle table-striped">
+                      <thead className="table-secondary">
+                        <tr>
+                          <th>Expense Description</th>
+                          <th>Task Name</th>
+                          <th className="text-end ps-0 pe-2">Amount Spent</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {taskExpenditures.map((exp, idx) => (
+                          <tr key={idx}>
+                            <td>{exp.expenseDescription}</td>
+                            <td>
+                              <Link to={`/tasks/${exp.taskId}`} 
+                              className="text-decoration-none">
+                                {exp.taskName}
+                              </Link>
+                            </td>
+                            <td className="text-end ps-0 pe-2">{formatCurrency(exp.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="table-secondary">
+                        <tr>
+                          <th>Total</th>
+                          <th></th>
+                          <th className="text-end">
+                            {formatCurrency(taskExpenditures.reduce((sum, exp) => sum + parseFloat(exp.amount), 0))}</th>
+                        </tr>
+                      </tfoot>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </Tab>
-        <Tab eventKey="activity" title="Activity">
-          <div className="p-3 bg-light rounded">
-            <p className="text-center text-muted">No recent activity</p>
-          </div>
-        </Tab>
-      </Tabs>
+        </Card.Body>
+      </Card>
     </div>
   );
 };
