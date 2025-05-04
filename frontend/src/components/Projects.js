@@ -46,7 +46,22 @@ const Projects = ({ onProjectSelect }) => {
     });
   };
 
-  const handleShowModal = () => setShowModal(true);
+  const handleShowModal = () => {
+    // Get current user from localStorage or other source
+    const currentUser = JSON.parse(localStorage.getItem('user')) || null;
+    setCurrentProject({
+      id: null,
+      name: '',
+      description: '',
+      project_manager: currentUser ? currentUser.name : '',
+      timeline: 0,
+      project_budget: '',
+      status: 'In Queue',
+      due_date: ''
+    });
+    setEditMode(false);
+    setShowModal(true);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -56,7 +71,7 @@ const Projects = ({ onProjectSelect }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const updatedProject = {
@@ -64,13 +79,63 @@ const Projects = ({ onProjectSelect }) => {
       id: editMode ? currentProject.id : Date.now()
     };
 
-    if (editMode) {
-      setProjects(projects.map((project) => project.id === currentProject.id ? updatedProject : project));
-    } else {
-      setProjects([...projects, updatedProject]);
-    }
+    try {
+      const token = localStorage.getItem('token');
+      let response;
+      if (editMode) {
+        response = await fetch(`http://localhost:8000/api/projects/${currentProject.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: currentProject.name,
+            description: currentProject.description,
+            user_id: currentProject.project_manager, // Assuming project_manager is user_id, adjust if needed
+            budget: currentProject.project_budget,
+            status: currentProject.status,
+            start_date: currentProject.start_date,
+            due_date: currentProject.due_date
+          })
+        });
+      } else {
+        response = await fetch('http://localhost:8000/api/projects', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            name: currentProject.name,
+            description: currentProject.description,
+            user_id: currentProject.project_manager, // Assuming project_manager is user_id, adjust if needed
+            budget: currentProject.project_budget,
+            status: currentProject.status,
+            start_date: currentProject.start_date,
+            due_date: currentProject.due_date
+          })
+        });
+      }
 
-    handleCloseModal();
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert('Error: ' + (errorData.errors ? JSON.stringify(errorData.errors) : 'Failed to save project'));
+        return;
+      }
+
+      const savedProject = await response.json();
+
+      if (editMode) {
+        setProjects(projects.map((project) => project.id === savedProject.id ? savedProject : project));
+      } else {
+        setProjects([...projects, savedProject]);
+      }
+
+      handleCloseModal();
+    } catch (error) {
+      alert('Error saving project: ' + error.message);
+    }
   };
 
   const handleEdit = (project) => {
@@ -201,7 +266,7 @@ const Projects = ({ onProjectSelect }) => {
                 </Form.Group>
               </div>
 
-              {/* Description - full width */}
+              {/* Description */}
               <div className="col-12 mb-3">
                 <Form.Group>
                   <Form.Label>Description</Form.Label>
@@ -214,21 +279,6 @@ const Projects = ({ onProjectSelect }) => {
                   />
                 </Form.Group>
               </div>
-
-              {/* Timeline */}
-              {/* <div className="col-md-6 mb-3">
-                <Form.Group>
-                  <Form.Label>Progress (%)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    name="timeline"
-                    min="0"
-                    max="100"
-                    value={currentProject.timeline}
-                    onChange={handleInputChange}
-                  />
-                </Form.Group>
-              </div> */}
 
               {/* Budget */}
               <div className="col-md-6 mb-3">
@@ -248,17 +298,17 @@ const Projects = ({ onProjectSelect }) => {
               <div className="col-md-6 mb-3">
                 <Form.Group>
                   <Form.Label>Status</Form.Label>
-                  <Form.Select
-                    name="status"
-                    value={currentProject.status}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="In Queue">In Queue</option>
-                    <option value="To Do">To Do</option>
-                    <option value="In Progress">In Progress</option>
-                    <option value="Completed">Completed</option>
-                  </Form.Select>
+              <Form.Select
+                name="status"
+                value={currentProject.status}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="To Do">To Do</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </Form.Select>
                 </Form.Group>
               </div>
 
@@ -310,12 +360,10 @@ const Projects = ({ onProjectSelect }) => {
 
 const getStatusBadgeClass = (status) => {
   switch (status) {
-    case 'In Queue':
-      return 'bg-secondary';
     case 'To Do':
-      return 'bg-info';
-    case 'In Progress':
       return 'bg-primary';
+    case 'In Progress':
+      return 'bg-warning';
     case 'Completed':
       return 'bg-success';
     default:
@@ -333,5 +381,4 @@ const formatDate = (dateString) => {
   });
 };
 
-export { getStatusBadgeClass };
 export default Projects;

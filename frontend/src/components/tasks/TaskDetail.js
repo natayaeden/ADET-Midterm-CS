@@ -26,11 +26,11 @@ const TaskDetail = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    status: '',
-    priority: '',
+    status: 'To Do',
+    priority: 'Medium',
     due_date: '',
-    assigned_to: '',
-    budget: ''
+    start_date: '',
+    assigned_to: ''
   });
   const [newComment, setNewComment] = useState('');
   const [updateError, setUpdateError] = useState(null);
@@ -74,22 +74,31 @@ const TaskDetail = () => {
       const taskData = await taskResponse.json();
       setTask(taskData);
       
-      // Format the date properly for the input field
-      let formattedDate = '';
+      // Format the dates for the input fields (YYYY-MM-DD)
+      let formattedDueDate = '';
+      let formattedStartDate = '';
       if (taskData.due_date) {
-        formattedDate = taskData.due_date.includes('T') 
-          ? taskData.due_date.split('T')[0] 
-          : taskData.due_date;
+        const d = new Date(taskData.due_date);
+        formattedDueDate = d.toISOString().split('T')[0];
       }
-      
+      if (taskData.start_date) {
+        const d = new Date(taskData.start_date);
+        formattedStartDate = d.toISOString().split('T')[0];
+      }
+      // Always use string for assigned_to
+      const assignedToValue = taskData.assigned_to
+        ? (typeof taskData.assigned_to === 'object'
+            ? String(taskData.assigned_to.id)
+            : String(taskData.assigned_to))
+        : '';
       setFormData({
         title: taskData.title || '',
         description: taskData.description || '',
         status: taskData.status || 'To Do',
         priority: taskData.priority || 'Medium',
-        due_date: formattedDate,
-        assigned_to: taskData.assigned_to || '',
-        budget: taskData.budget || ''
+        due_date: formattedDueDate,
+        start_date: formattedStartDate,
+        assigned_to: assignedToValue
       });
       
       // Fetch project details
@@ -102,7 +111,13 @@ const TaskDetail = () => {
       }
       
       const projectData = await projectResponse.json();
-      setProject(projectData);
+      // Format project dates
+      const formattedProjectData = {
+        ...projectData,
+        start_date: projectData.start_date ? new Date(projectData.start_date).toISOString().split('T')[0] : '',
+        due_date: projectData.due_date ? new Date(projectData.due_date).toISOString().split('T')[0] : ''
+      };
+      setProject(formattedProjectData);
       
       // Fetch all tasks for this project to calculate budget allocation
       const projectTasksResponse = await fetch(`http://localhost:8000/api/projects/${projectData.id}/tasks`, {
@@ -172,10 +187,36 @@ const TaskDetail = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prevData => ({
-      ...prevData,
-      [name]: value
-    }));
+    
+    if (name === 'start_date') {
+      // Check if start date is within project date range
+      if (project && project.start_date && value < project.start_date) {
+        setUpdateError(`Task start date cannot be earlier than project start date (${new Date(project.start_date).toLocaleDateString()})`);
+        return;
+      }
+      if (formData.due_date && value > formData.due_date) {
+        setFormData(prev => ({ 
+          ...prev, 
+          [name]: value,
+          due_date: value 
+        }));
+      } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+      }
+    } else if (name === 'due_date') {
+      // Check if due date is within project date range
+      if (project && project.due_date && value > project.due_date) {
+        setUpdateError(`Task due date cannot be later than project due date (${new Date(project.due_date).toLocaleDateString()})`);
+        return;
+      }
+      if (formData.start_date && value < formData.start_date) {
+        setUpdateError('Due date cannot be earlier than start date');
+        return;
+      }
+      setFormData(prev => ({ ...prev, [name]: value }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -183,26 +224,13 @@ const TaskDetail = () => {
     setUpdateError(null);
     
     try {
-      // Check if the budget allocation would exceed the project budget
-      const currentTaskBudget = parseFloat(task.budget) || 0;
-      const newTaskBudget = parseFloat(formData.budget) || 0;
-      const budgetDifference = newTaskBudget - currentTaskBudget;
-      
-      if (budgetDifference > 0 && budgetDifference > projectBudgetInfo.remainingBudget) {
-        setUpdateError(`The budget allocation would exceed the remaining project budget of ${formatCurrency(projectBudgetInfo.remainingBudget)}. Please adjust the budget.`);
-        return;
-      }
-      
       // Prepare the data to send to the API
       const dataToSubmit = {
         ...formData,
-        // Convert empty strings to appropriate types
-        budget: formData.budget === '' ? null : parseFloat(formData.budget),
         assigned_to: formData.assigned_to === '' ? null : parseInt(formData.assigned_to, 10),
-        due_date: formData.due_date || null
+        due_date: formData.due_date || null,
+        start_date: formData.start_date || null
       };
-      
-      console.log('Submitting data:', dataToSubmit);
       
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:8000/api/tasks/${id}`, {
@@ -214,29 +242,15 @@ const TaskDetail = () => {
         body: JSON.stringify(dataToSubmit)
       });      
       
-      const responseText = await response.text();
-      console.log('Response text:', responseText);
-      
-      let responseData;
-      try {
-        responseData = JSON.parse(responseText);
-        console.log('Parsed response:', responseData);
-      } catch (e) {
-        responseData = { message: responseText };
-        console.log('Failed to parse response as JSON');
-      }
-      
       if (!response.ok) {
-        const errorMessage = responseData.message || 
-                             responseData.error || 
-                             `Server returned ${response.status}: ${response.statusText}`;
-        console.error('Error details:', responseData);
-        throw new Error(errorMessage);
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Failed to update task');
       }
       
+      const responseData = await response.json();
       setTask(responseData);
       setIsEditing(false);
-      fetchTaskDetails();
+      fetchTaskDetails(); 
     } catch (error) {
       setUpdateError(error.message || 'Failed to update task. Please try again.');
     }
@@ -310,24 +324,14 @@ const TaskDetail = () => {
     e.preventDefault();
     if (!newExpenditure.amount || !newExpenditure.description) return;
     
-    // Check if the new expenditure would exceed the budget
-    const amount = parseFloat(newExpenditure.amount);
-    const newTotal = projectBudgetInfo.allocatedBudget + amount;
-    if (project.budget && newTotal > parseFloat(project.budget)) {
-      alert(`This expenditure would exceed the project budget of ${formatCurrency(project.budget)}. Please adjust the amount.`);
-      return;
-    }
-    
     try {
       const token = localStorage.getItem('token');
       const expenditureData = {
         task_id: id,
         description: newExpenditure.description,
-        amount: amount, // Use the parsed amount
+        amount: parseFloat(newExpenditure.amount),
         date: newExpenditure.date
       };
-      
-      console.log('Submitting expenditure:', expenditureData);
       
       const response = await fetch('http://localhost:8000/api/task-expenditures', {
         method: 'POST',
@@ -339,8 +343,6 @@ const TaskDetail = () => {
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Expenditure error:', errorText);
         throw new Error('Failed to add expenditure');
       }
       
@@ -421,21 +423,6 @@ const TaskDetail = () => {
           <li className="breadcrumb-item active">{task.title}</li>
         </ol>
       </nav>
-      
-      {/* Project Budget Information */}
-      <div className="alert alert-info mb-4">
-        <div className="d-flex justify-content-between align-items-center">
-          <strong>Project Budget</strong>
-          <div className="budget-badges">
-            <span className="badge bg-primary me-2">
-              Total: {formatCurrency(projectBudgetInfo.totalBudget)}
-            </span>
-            <span className={`badge ${projectBudgetInfo.remainingBudget < 0 ? 'bg-danger' : 'bg-success'} me-2`}>
-              Remaining: {formatCurrency(projectBudgetInfo.remainingBudget)}
-            </span>
-          </div>
-        </div>
-      </div>
       
       <div className="card mb-4">
         <div className="card-header d-flex justify-content-between align-items-center">
@@ -531,6 +518,21 @@ const TaskDetail = () => {
               
               <div className="row mb-3">
                 <div className="col-md-6">
+                  <label htmlFor="start_date" className="form-label">Start Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="start_date"
+                    name="start_date"
+                    value={formData.start_date}
+                    onChange={handleInputChange}
+                    min={project?.start_date}
+                    max={project?.due_date}
+                    required
+                  />
+                </div>
+                
+                <div className="col-md-6">
                   <label htmlFor="due_date" className="form-label">Due Date</label>
                   <input
                     type="date"
@@ -539,45 +541,28 @@ const TaskDetail = () => {
                     name="due_date"
                     value={formData.due_date}
                     onChange={handleInputChange}
+                    min={formData.start_date || project?.start_date}
+                    max={project?.due_date}
+                    required
                   />
-                </div>
-                
-                <div className="col-md-6">
-                <label htmlFor="assigned_to" className="form-label">Assigned To</label>
-                <select
-                  className="form-select"
-                  id="assigned_to"
-                  name="assigned_to"
-                  value={formData.assigned_to}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Unassigned</option>
-                  {users.map(user => (
-                    <option key={user.id} value={user.id}>{user.name}</option>
-                  ))}
-                </select>
                 </div>
               </div>
               
               <div className="row mb-3">
-                <div className="col-md-12">
-                  <label htmlFor="budget" className="form-label">
-                    Allocated Budget (₱)
-                    <small className="text-muted ms-2">
-                      Available Project Budget: {formatCurrency(projectBudgetInfo.remainingBudget + (parseFloat(task.budget) || 0))}
-                    </small>
-                  </label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="budget"
-                    name="budget"
-                    value={formData.budget}
+                <div className="col-md-6">
+                  <label htmlFor="assigned_to" className="form-label">Assigned To</label>
+                  <select
+                    className="form-select"
+                    id="assigned_to"
+                    name="assigned_to"
+                    value={formData.assigned_to}
                     onChange={handleInputChange}
-                    min="0"
-                    max={projectBudgetInfo.remainingBudget + (parseFloat(task.budget) || 0)}
-                    step="100"
-                  />
+                  >
+                    <option value="">Unassigned</option>
+                    {users.map(user => (
+                      <option key={user.id} value={user.id}>{user.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
             </form>
@@ -602,15 +587,6 @@ const TaskDetail = () => {
                       </span>
                     </li>
                     <li className="list-group-item d-flex justify-content-between align-items-center">
-                      Due Date
-                      <span>{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Not set'}</span>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="col-md-6">
-                  <ul className="list-group">
-                    <li className="list-group-item d-flex justify-content-between align-items-center">
                       Assigned To
                       <span>{
                         typeof task.assigned_to === 'object' && task.assigned_to
@@ -620,9 +596,18 @@ const TaskDetail = () => {
                             : 'Unassigned'
                       }</span>
                     </li>
+                  </ul>
+                </div>
+                
+                <div className="col-md-6">
+                  <ul className="list-group">                    
                     <li className="list-group-item d-flex justify-content-between align-items-center">
-                      Allocated Budget
-                      <span className="fw">{formatCurrency(task.budget || 0)}</span>
+                      Start Date
+                      <span>{task.start_date ? new Date(task.start_date).toLocaleDateString() : 'Not set'}</span>
+                    </li>
+                    <li className="list-group-item d-flex justify-content-between align-items-center">
+                      Due Date
+                      <span>{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Not set'}</span>
                     </li>
                   </ul>
                 </div>
@@ -684,7 +669,7 @@ const TaskDetail = () => {
       </div> */}
       
       {/* Task Expenditures Section */}
-      <div className="card mt-4">
+      <div className="card">
         <div className="card-header d-flex justify-content-between align-items-center">
           <h5 className="mb-0">
             Task Expenditures
@@ -696,18 +681,8 @@ const TaskDetail = () => {
               <i className={`bi ${expendituresLoading ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'}`}></i>
             </button>
           </h5>
-          <div className="budget-badges">
-            <span className="badge bg-primary me-2">
-              Task Budget: {formatCurrency(task.budget || 0)}
-            </span>
-            <span className="badge bg-secondary me-2">
-              Spent: {formatCurrency(totalExpenditure)}
-            </span>
-            <span className={`badge ${totalExpenditure > (task.budget || 0) ? 'bg-danger' : 'bg-success'} me-2`}>
-              Remaining: {formatCurrency((task.budget || 0) - totalExpenditure)}
-            </span>
-          </div>
         </div>
+        
         <div className="card-body">
           {/* Add Expenditure Form */}
           <form onSubmit={handleAddExpenditure} className="mb-4">
@@ -755,20 +730,14 @@ const TaskDetail = () => {
                   />
                 </div>
               </div>
-              <div className="col-12 mt-3">
+              <div className="col-12">
                 <button 
                   type="submit" 
                   className="btn btn-primary float-end"
-                  disabled={task.budget && (totalExpenditure + parseFloat(newExpenditure.amount || 0) > parseFloat(task.budget))}
                 >
                   <i className="bi bi-plus-circle me-1"></i>
                   Add Expenditure
                 </button>
-                {task.budget && (totalExpenditure + parseFloat(newExpenditure.amount || 0) > parseFloat(task.budget)) && (
-                  <div className="text-danger float-end me-3 mt-2">
-                    This expenditure would exceed the budget limit.
-                  </div>
-                )}
               </div>
             </div>
           </form>

@@ -39,9 +39,9 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'status' => 'required|in:To Do,In Progress,Under Review,Completed',
             'priority' => 'required|in:Low,Medium,High,Urgent',
-            'due_date' => 'nullable|date',
-            'estimated_hours' => 'nullable|integer|min:0',
             'budget' => 'nullable|numeric|min:0',
+            'start_date' => 'nullable|date',
+            'due_date' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {
@@ -79,9 +79,9 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'status' => 'sometimes|required|in:To Do,In Progress,Under Review,Completed',
             'priority' => 'sometimes|required|in:Low,Medium,High,Urgent',
-            'due_date' => 'nullable|date',
-            'estimated_hours' => 'nullable|integer|min:0',
             'budget' => 'nullable|numeric|min:0',
+            'start_date' => 'nullable|date',
+            'due_date' => 'nullable|date',
         ]);
 
         if ($validator->fails()) {

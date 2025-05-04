@@ -16,12 +16,13 @@ class Task extends Model
         'assigned_to',
         'status',
         'priority',
-        'due_date',
-        'estimated_hours',
         'budget',
+        'start_date',
+        'due_date',
     ];
 
     protected $casts = [
+        'start_date' => 'date',
         'due_date' => 'date',
         'budget' => 'decimal:2',
     ];
@@ -49,11 +50,6 @@ class Task extends Model
     public function expenditures()
     {
         return $this->hasMany(TaskExpenditure::class);
-    }
-
-    public function getTotalTimeSpentAttribute()
-    {
-        return $this->timeEntries->sum('hours');
     }
 
     public function getTotalExpenditureAttribute()
