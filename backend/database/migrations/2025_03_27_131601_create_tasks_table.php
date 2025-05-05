@@ -14,9 +14,11 @@ return new class extends Migration {
             $table->string('title')->nullable();
             $table->text('description')->nullable();
             $table->decimal('task_budget', 10, 2)->nullable();
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
             $table->date('due_date')->nullable();
             $table->enum('priority', ['High', 'Medium', 'Low'])->default('Medium');
-            $table->enum('status', ['To Do', 'In Progress', 'Done'])->default('To Do');
+            $table->enum('status', ['Not Started', 'In Progress', 'On Hold', 'Completed', 'Cancelled'])->default('Not Started');
             $table->timestamps();
         });
     }

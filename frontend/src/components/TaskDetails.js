@@ -114,6 +114,26 @@ const TaskDetails = () => {
                                                     <strong>{formatDate(task.due_date)}</strong>
                                                 </div>
                                             </div>
+
+                                            <div className="d-flex align-items-center mb-3">
+                                                <div className="icon-box me-3 bg-primary text-white rounded p-2">
+                                                    <i className="bi bi-calendar-check-fill"></i>
+                                                </div>
+                                                <div>
+                                                    <small className="text-muted d-block">Start Date</small>
+                                                    <strong>{formatDate(task.start_date)}</strong>
+                                                </div>
+                                            </div>
+
+                                            <div className="d-flex align-items-center mb-3">
+                                                <div className="icon-box me-3 bg-primary text-white rounded p-2">
+                                                    <i className="bi bi-calendar-x-fill"></i>
+                                                </div>
+                                                <div>
+                                                    <small className="text-muted d-block">End Date</small>
+                                                    <strong>{formatDate(task.end_date)}</strong>
+                                                </div>
+                                            </div>
                                         </Card.Body>
                                     </Card>
                                 </Col>

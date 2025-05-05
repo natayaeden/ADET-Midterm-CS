@@ -263,6 +263,8 @@ const Tasks = () => {
                                     <th>Assignee</th>
                                     <th>Priority</th>
                                     <th>Status</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
                                     <th>Due Date</th>
                                     <th>Budget</th>
                                     <th>Actions</th>
@@ -286,6 +288,8 @@ const Tasks = () => {
                                                 {task.status}
                                             </span>
                                         </td>
+                                        <td>{formatDate(task.start_date)}</td>
+                                        <td>{formatDate(task.end_date)}</td>
                                         <td>{formatDate(task.due_date)}</td>
                                         <td>{formatCurrency(task.task_budget)}</td>
                                         <td>
@@ -400,6 +404,28 @@ const Tasks = () => {
                                             value={currentTask.due_date}
                                             onChange={handleInputChange}
                                             required
+                                        />
+                                    </Form.Group>
+                                </div>
+                                <div className="col-md-4">
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Start Date</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            name="start_date"
+                                            value={currentTask.start_date}
+                                            onChange={handleInputChange}
+                                        />
+                                    </Form.Group>
+                                </div>
+                                <div className="col-md-4">
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>End Date</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            name="end_date"
+                                            value={currentTask.end_date}
+                                            onChange={handleInputChange}
                                         />
                                     </Form.Group>
                                 </div>
