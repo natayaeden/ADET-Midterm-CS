@@ -26,6 +26,7 @@ class ProjectController extends Controller
             'status' => 'required|in:To Do,In Progress,Completed',
             'start_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:start_date',
+            'completed_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
         if ($validator->fails()) {
@@ -54,6 +55,7 @@ class ProjectController extends Controller
             'status' => 'sometimes|required|in:To Do,In Progress,Completed',
             'start_date' => 'sometimes|required|date',
             'due_date' => 'sometimes|required|date|after_or_equal:start_date',
+            'completed_date' => 'nullable|date|after_or_equal:start_date',
         ]);
 
         if ($validator->fails()) {

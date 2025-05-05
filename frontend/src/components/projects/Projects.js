@@ -167,22 +167,26 @@ const Projects = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const projectData = {
-        name: currentProject.name,
-        description: currentProject.description,
-        user_id: currentUser ? currentUser.id : currentProject.user_id,
-        budget: currentProject.budget,
-        status: editMode ? currentProject.status : 'To Do',
-        start_date: currentProject.start_date,
-        due_date: currentProject.due_date,
-        completed_date: currentProject.status === 'Completed' ? currentProject.completed_date : null
-      };
-
       const url = editMode
         ? `http://localhost:8000/api/projects/${currentProject.id}`
         : 'http://localhost:8000/api/projects';
 
       const method = editMode ? 'PUT' : 'POST';
+
+      // Format the project data
+      const projectData = {
+        name: currentProject.name,
+        description: currentProject.description || null,
+        user_id: currentUser ? currentUser.id : currentProject.user_id,
+        budget: parseFloat(currentProject.budget),
+        status: editMode ? currentProject.status : 'To Do',
+        start_date: currentProject.start_date,
+        due_date: currentProject.due_date,
+        completed_date: currentProject.status === 'Completed' ? new Date().toISOString().split('T')[0] : null
+      };
+
+      // Log the payload for debugging
+      console.log('Sending payload:', projectData);
 
       const response = await fetch(url, {
         method,
@@ -194,26 +198,12 @@ const Projects = () => {
       });
 
       if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json();
-          throw new Error(data.message || 'Failed to save project');
-        } else {
-          throw new Error(`Server error: ${response.status}`);
-        }
+        const data = await response.json();
+        console.error('Server error details:', data);
+        throw new Error(data.message || 'Failed to save project');
       }
 
-      const updatedProject = await response.json();
-      
-      // Update the projects list with the new data
-      if (editMode) {
-        setProjects(projects.map(p => 
-          p.id === currentProject.id ? updatedProject : p
-        ));
-      } else {
-        setProjects([...projects, updatedProject]);
-      }
-
+      fetchProjects();
       handleCloseModal();
     } catch (err) {
       console.error('Error saving project:', err);

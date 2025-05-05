@@ -17,11 +17,13 @@ class Project extends Model
         'status',
         'start_date',
         'due_date',
+        'completed_date',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'due_date' => 'date',
+        'completed_date' => 'date',
         'budget' => 'decimal:2',
     ];
 
