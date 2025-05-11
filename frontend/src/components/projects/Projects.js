@@ -373,12 +373,17 @@ const Projects = () => {
 
   // Filter and search projects
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (project.description && project.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = filterStatus === '' || project.status === filterStatus;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const isOwnedByUser = currentUser && project.user_id === currentUser.id;
+
+  const matchesSearch =
+    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (project.description &&
+      project.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
+  const matchesStatus = filterStatus === '' || project.status === filterStatus;
+
+  return isOwnedByUser && matchesSearch && matchesStatus;
+});
 
   if (loading) {
     return (
