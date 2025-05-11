@@ -42,6 +42,16 @@ class Project extends Model
         return $this->hasMany(Expenditure::class);
     }
 
+    public function risks()
+    {
+        return $this->hasMany(Risk::class);
+    }
+
+    public function issues()
+    {
+        return $this->hasMany(Issue::class);
+    }
+
     public function getTotalExpenditureAttribute()
     {
         return $this->expenditures->sum('amount');

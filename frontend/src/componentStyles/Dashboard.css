@@ -1,99 +1,107 @@
 .dashboard-container {
     display: flex;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh;
 }
 
 /* Sidebar */
 .sidebar {
-    width: 300px;
-    background-color: #313745;
+    width: 250px;
+    background-color: #2c3e50;
     color: white;
-    transition: width 0.3s ease, transform 0.3s ease;
+    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
 }
 
 .sidebar.closed {
-    width: 80px;
-}
-
-.sidebar.closed .sidebar-nav span,
-.sidebar.closed .sidebar-footer span {
-    display: none;
-}
-
-.sidebar.closed .sidebar-nav a {
-    justify-content: center;
-}
-
-.sidebar.closed .sidebar-footer {
-    align-items: center;
+    width: 70px;
 }
 
 .sidebar-header {
-    display: flex;
-    align-items: center;
-    justify-content: center; 
-    padding: 20px;
+    padding: 1.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
+}
 
 .sidebar-brand {
-    font-weight: bold;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: white;
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: 1rem 0;
 }
 
 .sidebar-nav ul {
     list-style: none;
-    padding: 20px 0;
+    padding: 0;
     margin: 0;
 }
 
 .sidebar-nav li {
-    padding: 10px 20px;
-    transition: background-color 0.3s;
-}
-
-.sidebar-nav li.active,
-.sidebar-nav li:hover {
-    background-color: rgba(255,255,255,0.1);
+    margin: 0.5rem 0;
 }
 
 .sidebar-nav a {
-    color: white;
-    text-decoration: none;
     display: flex;
     align-items: center;
-    gap: 15px;
+    padding: 0.75rem 1.5rem;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.sidebar-nav a:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.sidebar-nav li.active a {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-left: 4px solid #3498db;
 }
 
 .sidebar-nav i {
-    font-size: 1.2rem;
+    font-size: 1.25rem;
+    margin-right: 1rem;
+    width: 24px;
+    text-align: center;
+}
+
+.sidebar.closed .sidebar-nav span {
+    display: none;
+}
+
+.sidebar.closed .sidebar-brand {
+    display: none;
 }
 
 .sidebar-footer {
-    margin-top: auto;
-    padding: 20px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    display: flex;
+    padding: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .btn-logout {
-    background: none;
-    border: none;
-    color: white;
     width: 100%;
+    color: rgba(255, 255, 255, 0.8);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: none;
     display: flex;
     align-items: center;
-    gap: 15px;
-    text-align: left;
-    padding: 0;
 }
 
 .btn-logout:hover {
-    opacity: 0.8;
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.btn-logout i {
+    margin-right: 1rem;
+    font-size: 1.25rem;
 }
 
 /* navbar */
@@ -108,43 +116,47 @@
 
 .notification-badge {
     position: absolute;
-    top: 2px;
-    right: 2px;
-    background-color: red;
+    top: -5px;
+    right: -5px;
+    background-color: #e74c3c;
     color: white;
-    font-size: 0.7rem;
-    padding: 2px 6px;
     border-radius: 50%;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
 }
 
 .notification-popup {
     position: absolute;
-    top: 40px;
+    top: 100%;
     right: 0;
     width: 300px;
-    background-color: white;
-    border-radius: 0.5rem;
+    background: white;
+    border-radius: 4px;
     z-index: 1000;
 }
 
 .notification-header {
-    border-bottom: 1px solid #eee;
-    background-color: #f8f9fa;
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #dee2e6;
 }
 
 .list-group-item {
     font-size: 0.9rem;
 }
 
-
-
 /* main content */
 .main-content {
-    flex-grow: 1;
-    overflow-y: auto;
-    background-color: #f4f7fa;
-    transition: margin-left 0.3s ease;
+    flex: 1;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.main-content.sidebar-closed {
+    margin-left: 70px;
+}
+
+.main-content.sidebar-open {
+    margin-left: 250px;
 }
 
 .progress {
@@ -176,21 +188,20 @@
     vertical-align: middle;
 }
 
-
 /* responsiveness styles */
 @media (max-width: 768px) {
-
     .sidebar {
         position: fixed;
-        left: 0;
+        left: -250px;
+        height: 100vh;
         z-index: 1000;
     }
 
-    .sidebar.closed {
-        transform: translateX(-100%);
+    .sidebar.open {
+        left: 0;
     }
 
     .main-content {
-        margin-left: 0;
+        margin-left: 0 !important;
     }
 }

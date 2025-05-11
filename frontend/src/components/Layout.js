@@ -29,6 +29,13 @@ const Layout = () => {
     window.location.href = "/";
   };
 
+  const isActive = (path) => {
+    if (path === '/dashboard') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
+
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
@@ -38,41 +45,46 @@ const Layout = () => {
         </div>
         <nav className="sidebar-nav">
           <ul>
-                <li className={location.pathname === "/dashboard" ? "active" : ""}>
-                    <Link to="/dashboard">
-                        <i className="bi bi-grid"></i><span>Dashboard</span>
-                    </Link>
-                </li>
+            <li className={isActive('/dashboard') ? "active" : ""}>
+              <Link to="/dashboard">
+                <i className="bi bi-grid"></i>
+                <span>Dashboard</span>
+              </Link>
+            </li>
 
-                <li className={location.pathname === "/projects" ? "active" : ""}>
-                    <Link to="/projects">
-                        <i className="bi bi-folder"></i><span>Projects</span>
-                    </Link>
-                </li>
-{/* 
-                <li className={location.pathname === "/tasks" ? "active" : ""}>
-                    <Link to="#">
-                        <i className="bi bi-list-task"></i><span>Tasks</span>
-                    </Link>
-                </li> */}
+            <li className={isActive('/projects') ? "active" : ""}>
+              <Link to="/projects">
+                <i className="bi bi-folder"></i>
+                <span>Projects</span>
+              </Link>
+            </li>
 
+            <li className={isActive('/projects/risks') ? "active" : ""}>
+              <Link to="/projects/risks">
+                <i className="bi bi-exclamation-triangle"></i>
+                <span>Risk Management</span>
+              </Link>
+            </li>
 
-                <li className={location.pathname === "/budget" ? "active" : ""}>
-                    <Link to="#">
-                        <i className="bi bi-cash-stack"></i><span>Budget Tracker</span>
-                    </Link>
-                </li>
+            <li className={isActive('/projects/issues') ? "active" : ""}>
+              <Link to="/projects/issues">
+                <i className="bi bi-bug"></i>
+                <span>Issue Tracking</span>
+              </Link>
+            </li>
 
-                <li className={location.pathname === "/reports" ? "active" : ""}>
-                    <Link to="#">
-                        <i className="bi bi-bar-chart"></i><span>Reports</span>
-                    </Link>
-                </li>
-            </ul>
+            <li className={isActive('/projects/reports') ? "active" : ""}>
+              <Link to="/projects/reports">
+                <i className="bi bi-bar-chart"></i>
+                <span>Reports & Analytics</span>
+              </Link>
+            </li>
+          </ul>
         </nav>
         <div className="sidebar-footer">
           <button className="btn btn-logout" onClick={handleLogout}>
-            <i className="bi bi-box-arrow-left"></i><span>Sign Out</span>
+            <i className="bi bi-box-arrow-left"></i>
+            <span>Sign Out</span>
           </button>
         </div>
       </div>
