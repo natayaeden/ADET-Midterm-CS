@@ -15,6 +15,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     protected $hidden = [
@@ -46,5 +47,24 @@ class User extends Authenticatable
     {
         return $this->hasMany(TaskComment::class);
     }
-}
 
+    /**
+     * Check if the user is a manager
+     *
+     * @return bool
+     */
+    public function isManager()
+    {
+        return $this->role === 'manager';
+    }
+
+    /**
+     * Check if the user is a member
+     *
+     * @return bool
+     */
+    public function isMember()
+    {
+        return $this->role === 'member';
+    }
+}
