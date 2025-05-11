@@ -8,7 +8,8 @@ const Register = ({ onLogin }) => {
     name: '',
     email: '',
     password: '',
-    password_confirmation: ''
+    password_confirmation: '',
+    role: 'member' // Default role
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +21,7 @@ const Register = ({ onLogin }) => {
     };
   }, []);
 
-  const { name, email, password, password_confirmation } = formData;
+  const { name, email, password, password_confirmation, role } = formData;
 
   const handleChange = e => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -41,13 +42,14 @@ const Register = ({ onLogin }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json', // ✅ added this
+          'Accept': 'application/json',
         },
         body: JSON.stringify({
           name,
           email,
           password,
-          password_confirmation
+          password_confirmation,
+          role
         })
       });
 
@@ -135,6 +137,19 @@ const Register = ({ onLogin }) => {
                   placeholder="Confirm Password"
                   className="register-input"
                 />
+              </Form.Group>
+
+              <Form.Group className="register-form-group">
+                <Form.Label className="register-select-label">Select Role</Form.Label>
+                <Form.Select
+                  name="role"
+                  value={role}
+                  onChange={handleChange}
+                  className="register-select"
+                >
+                  <option value="member">Member</option>
+                  <option value="manager">Manager</option>
+                </Form.Select>
               </Form.Group>
 
               <Button
