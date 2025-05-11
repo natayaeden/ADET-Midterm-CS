@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Outlet, Link } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import "../componentStyles/Dashboard.css";
@@ -9,7 +8,6 @@ const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showNotification, setShowNotification] = useState(false);
   const notificationRef = useRef(null);
-
   const location = useLocation();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -30,10 +28,7 @@ const Layout = () => {
   };
 
   const isActive = (path) => {
-    if (path === '/dashboard') {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
+    return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
   return (
@@ -59,24 +54,24 @@ const Layout = () => {
               </Link>
             </li>
 
-            <li className={isActive('/projects/risks') ? "active" : ""}>
-              <Link to="/projects/risks">
-                <i className="bi bi-exclamation-triangle"></i>
-                <span>Risk Management</span>
-              </Link>
-            </li>
-
-            <li className={isActive('/projects/issues') ? "active" : ""}>
-              <Link to="/projects/issues">
-                <i className="bi bi-bug"></i>
-                <span>Issue Tracking</span>
-              </Link>
-            </li>
-
-            <li className={isActive('/projects/reports') ? "active" : ""}>
-              <Link to="/projects/reports">
+            <li className={isActive('/reports') ? "active" : ""}>
+              <Link to="/reports">
                 <i className="bi bi-bar-chart"></i>
                 <span>Reports & Analytics</span>
+              </Link>
+            </li>
+
+            <li className={isActive('/budget') ? "active" : ""}>
+              <Link to="/budget">
+                <i className="bi bi-cash-stack"></i>
+                <span>Budget Tracker</span>
+              </Link>
+            </li>
+
+            <li className={isActive('/risk-management') ? "active" : ""}>
+              <Link to="/risk-management">
+                <i className="bi bi-shield-exclamation"></i>
+                <span>Risk Management</span>
               </Link>
             </li>
           </ul>

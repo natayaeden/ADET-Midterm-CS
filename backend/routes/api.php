@@ -10,7 +10,6 @@ use App\Http\Controllers\TaskExpenditureController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RiskController;
-use App\Http\Controllers\IssueController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -60,19 +59,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Notification routes
     Route::get('/notifications', [NotificationController::class, 'index']);
 
-    // Project Risks
+    // Risk routes
+    Route::apiResource('risks', RiskController::class);
     Route::get('/projects/{project}/risks', [RiskController::class, 'index']);
-    Route::post('/projects/{project}/risks', [RiskController::class, 'store']);
-    Route::put('/projects/{project}/risks/{risk}', [RiskController::class, 'update']);
-    Route::delete('/projects/{project}/risks/{risk}', [RiskController::class, 'destroy']);
-
-    // Project Issues
-    Route::get('/projects/{project}/issues', [IssueController::class, 'index']);
-    Route::post('/projects/{project}/issues', [IssueController::class, 'store']);
-    Route::put('/projects/{project}/issues/{issue}', [IssueController::class, 'update']);
-    Route::delete('/projects/{project}/issues/{issue}', [IssueController::class, 'destroy']);
-
-    // Project Reports
-    Route::get('/projects/{project}/budget', [ProjectController::class, 'getBudgetReport']);
-    Route::get('/projects/{project}/progress', [ProjectController::class, 'getProgressReport']);
+    Route::get('/projects/{project}/risk-statistics', [RiskController::class, 'getProjectStatistics']);
 });

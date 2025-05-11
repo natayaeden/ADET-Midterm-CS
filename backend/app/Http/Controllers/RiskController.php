@@ -9,51 +9,95 @@ use Illuminate\Support\Facades\Auth;
 
 class RiskController extends Controller
 {
-    public function index(Project $project)
+    public function index(Request $request)
     {
-        $risks = $project->risks()->with('assignedUser')->get();
-        return response()->json($risks);
+        $query = Risk::with(['project', 'assignedUser']);
+        
+        if ($request->has('project_id')) {
+            $query->where('project_id', $request->project_id);
+        }
+        
+        if ($request->has('type')) {
+            $query->where('type', $request->type);
+        }
+        
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        return response()->json($query->get());
     }
 
-    public function store(Request $request, Project $project)
+    public function store(Request $request)
     {
         $validated = $request->validate([
+            'project_id' => 'required|exists:projects,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'type' => 'required|in:risk,issue',
             'severity' => 'required|in:low,medium,high,critical',
-            'probability' => 'required|in:low,medium,high',
-            'impact' => 'required|string',
-            'mitigation_strategy' => 'nullable|string',
-            'status' => 'required|in:open,in_progress,mitigated,closed',
+            'status' => 'required|in:open,in_progress,resolved,closed',
             'assigned_to' => 'nullable|exists:users,id',
-            'due_date' => 'nullable|date'
+            'due_date' => 'nullable|date',
+            'resolution' => 'nullable|string',
         ]);
 
-        $risk = $project->risks()->create($validated);
-        return response()->json($risk, 201);
+        $risk = Risk::create($validated);
+        return response()->json($risk->load(['project', 'assignedUser']), 201);
     }
 
-    public function update(Request $request, Project $project, Risk $risk)
+    public function show(Risk $risk)
+    {
+        return response()->json($risk->load(['project', 'assignedUser']));
+    }
+
+    public function update(Request $request, Risk $risk)
     {
         $validated = $request->validate([
-            'title' => 'string|max:255',
-            'description' => 'string',
-            'severity' => 'in:low,medium,high,critical',
-            'probability' => 'in:low,medium,high',
-            'impact' => 'string',
-            'mitigation_strategy' => 'nullable|string',
-            'status' => 'in:open,in_progress,mitigated,closed',
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|required|string',
+            'type' => 'sometimes|required|in:risk,issue',
+            'severity' => 'sometimes|required|in:low,medium,high,critical',
+            'status' => 'sometimes|required|in:open,in_progress,resolved,closed',
             'assigned_to' => 'nullable|exists:users,id',
-            'due_date' => 'nullable|date'
+            'due_date' => 'nullable|date',
+            'resolution' => 'nullable|string',
         ]);
 
         $risk->update($validated);
-        return response()->json($risk);
+        return response()->json($risk->load(['project', 'assignedUser']));
     }
 
-    public function destroy(Project $project, Risk $risk)
+    public function destroy(Risk $risk)
     {
         $risk->delete();
         return response()->json(null, 204);
+    }
+
+    public function getProjectStatistics(Project $project)
+    {
+        $risks = $project->risks;
+        
+        $statistics = [
+            'total' => $risks->count(),
+            'by_type' => [
+                'risk' => $risks->where('type', 'risk')->count(),
+                'issue' => $risks->where('type', 'issue')->count(),
+            ],
+            'by_severity' => [
+                'low' => $risks->where('severity', 'low')->count(),
+                'medium' => $risks->where('severity', 'medium')->count(),
+                'high' => $risks->where('severity', 'high')->count(),
+                'critical' => $risks->where('severity', 'critical')->count(),
+            ],
+            'by_status' => [
+                'open' => $risks->where('status', 'open')->count(),
+                'in_progress' => $risks->where('status', 'in_progress')->count(),
+                'resolved' => $risks->where('status', 'resolved')->count(),
+                'closed' => $risks->where('status', 'closed')->count(),
+            ],
+        ];
+
+        return response()->json($statistics);
     }
 } 

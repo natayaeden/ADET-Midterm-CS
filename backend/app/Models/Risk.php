@@ -13,17 +13,16 @@ class Risk extends Model
         'project_id',
         'title',
         'description',
-        'severity',
-        'probability',
-        'impact',
-        'mitigation_strategy',
-        'status',
+        'type', // risk or issue
+        'severity', // low, medium, high, critical
+        'status', // open, in_progress, resolved, closed
         'assigned_to',
-        'due_date'
+        'due_date',
+        'resolution',
     ];
 
     protected $casts = [
-        'due_date' => 'datetime',
+        'due_date' => 'date',
     ];
 
     public function project()
