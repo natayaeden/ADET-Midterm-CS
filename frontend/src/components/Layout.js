@@ -40,39 +40,38 @@ const Layout = () => {
         </div>
         <nav className="sidebar-nav">
           <ul>
-            <li className={isActive('/dashboard') ? "active" : ""}>
+            <li>
               <Link to="/dashboard">
                 <i className="bi bi-grid"></i>
                 <span>Dashboard</span>
               </Link>
             </li>
-
-            <li className={isActive('/projects') ? "active" : ""}>
+            <li>
               <Link to="/projects">
                 <i className="bi bi-folder"></i>
                 <span>Projects</span>
               </Link>
             </li>
-
-            <li className={isActive('/reports') ? "active" : ""}>
+            <li>
               <Link to="/reports">
                 <i className="bi bi-bar-chart"></i>
                 <span>Reports & Analytics</span>
               </Link>
             </li>
-
-            <li className={isActive('/budget') ? "active" : ""}>
+            <li>
               <Link to="/budget">
                 <i className="bi bi-cash-stack"></i>
                 <span>Budget Tracker</span>
               </Link>
             </li>
-
-            <li className={isActive('/risk-management') ? "active" : ""}>
+            <li>
               <Link to="/risk-management">
                 <i className="bi bi-shield-exclamation"></i>
                 <span>Risk Management</span>
               </Link>
+            </li>
+            <li>
+              <a href="#">Test Link</a>
             </li>
           </ul>
         </nav>
