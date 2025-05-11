@@ -359,7 +359,7 @@ const ProjectDetail = () => {
             <div className="col-md-12">
               <div className="card bg-light mb-4">
                 <div className="card-body">
-                  <h5 className="mb-3">Budget History</h5>
+                  <h5 className="mb-3">Project Expenditures</h5>
                   <div className="table-responsive">
                     <Table hover className="align-middle table-striped">
                       <thead className="table-secondary">

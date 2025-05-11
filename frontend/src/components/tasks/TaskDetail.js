@@ -585,7 +585,9 @@ const TaskDetail = () => {
             </form>
           ) : (
             <>
-              <h2 className="card-title">{task.title}</h2>
+              {/* transform h2 to uppercase */}
+
+              <h2 className="card-title">{task.title.toUpperCase()}</h2> 
               <p className="card-text">{task.description || 'No description provided.'}</p>
               
               <div className="row mb-4">
@@ -635,9 +637,9 @@ const TaskDetail = () => {
       </div>
       
       {/* Comments Section */}
-      <div className="card mt-4">
+      <div className="card my-4">
         <div className="card-header">
-            <h3>Comments</h3>
+            <h4>Comments</h4>
         </div>
         <ul className="list-group list-group-flush">
             {comments.map((comment) => (
@@ -666,7 +668,7 @@ const TaskDetail = () => {
       {/* Task Expenditures Section */}
       <div className="card">
         <div className="card-header d-flex justify-content-between align-items-center">
-          <h5 className="mb-0">
+          <h4 className="mb-0">
             Task Expenditures
             <button 
               onClick={() => fetchExpenditures(id)} 
@@ -675,7 +677,7 @@ const TaskDetail = () => {
             >
               <i className={`bi ${expendituresLoading ? 'bi-arrow-repeat spin' : 'bi-arrow-clockwise'}`}></i>
             </button>
-          </h5>
+          </h4>
         </div>
         
         <div className="card-body">

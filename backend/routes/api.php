@@ -41,8 +41,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tasks/{task}/time-entries', [TimeEntryController::class, 'getTimeEntriesByTask']);
     
     // Project Expenditure routes
-    Route::apiResource('expenditures', ExpenditureController::class);
-    Route::get('/projects/{project}/expenditures', [ExpenditureController::class, 'getExpendituresByProject']);
+    // Route::apiResource('expenditures', ExpenditureController::class);
+    // Route::get('/projects/{project}/expenditures', [ExpenditureController::class, 'getExpendituresByProject']);
     
     // Task Expenditure routes
     Route::apiResource('task-expenditures', TaskExpenditureController::class);
