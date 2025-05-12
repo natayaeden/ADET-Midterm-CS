@@ -20,6 +20,8 @@ import Budget from './components/budget/Budget';
 import Notifications from './components/Notifications';
 import NotFound from './components/layout/NotFound';
 import PrivateRoute from './components/routing/PrivateRoute';
+import Layout from './components/Layout';
+import Reports from './pages/Reports';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -94,7 +96,6 @@ function App() {
   return (
     <Router>
       <div className="app">
-        <h1>Task Management System</h1>
         {isAuthenticated && <Navbar user={user} onLogout={logout} />}
         
         <Routes>
@@ -105,77 +106,24 @@ function App() {
           <Route path="/register" element={
             isAuthenticated ? <Navigate to="/dashboard" /> : <Register onLogin={login} />
           } />
-          
-          {/* Protected routes with layout */}
-          <Route path="/" element={
-            isAuthenticated ? (
-              <main className={`container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <Dashboard user={user} />
-              </main>
-            ) : (
-              <Navigate to="/login" />
-            )
-          } />
-          
-          <Route path="/dashboard" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <main className={`container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <Dashboard user={user} />
-              </main>
-            </PrivateRoute>
-          } />
-          
-          <Route path="/projects" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <main className={`container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <Projects />
-              </main>
-            </PrivateRoute>
-          } />
-          
-          <Route path="/projects/:id" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <main className={`container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <ProjectDetail />
-              </main>
-            </PrivateRoute>
-          } />
-          
-          <Route path="/projects/:projectId/tasks" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <main className={`container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <Tasks />
-              </main>
-            </PrivateRoute>
-          } />
-          
-          <Route path="/projects/:projectId/tasks/new" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <main className={`container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <NewTask />
-              </main>
-            </PrivateRoute>
-          } />
-          
-          <Route path="/tasks/:id" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <main className={`container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <TaskDetail />
-              </main>
-            </PrivateRoute>
-          } />
-          
-          <Route path="/projects/:id/budget" element={
-            <PrivateRoute isAuthenticated={isAuthenticated}>
-              <main className={`container ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
-                <Budget />
-              </main>
-            </PrivateRoute>
-          } />
 
-          {/* Route for Notifications */}
-          <Route path="/notifications" element={<Notifications />} />
-          
+          {/* Protected routes with layout as parent */}
+          {isAuthenticated && (
+            <Route element={<Layout />}>
+              <Route path="/" element={<Dashboard user={user} />} />
+              <Route path="/dashboard" element={<Dashboard user={user} />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:id" element={<ProjectDetail />} />
+              <Route path="/projects/:projectId/tasks" element={<Tasks />} />
+              <Route path="/projects/:projectId/tasks/new" element={<NewTask />} />
+              <Route path="/tasks/:id" element={<TaskDetail />} />
+              <Route path="/budget" element={<Budget />} />
+              <Route path="/risk-management" element={<div>Risk Management Page</div>} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/reports" element={<Reports />} />
+            </Route>
+          )}
+
           <Route path="*" element={<NotFound />} />
         </Routes>
       </div>

@@ -1,17 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Outlet, Link, useLocation, NavLink } from "react-router-dom";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import "../componentStyles/Dashboard.css";
 
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [showNotification, setShowNotification] = useState(false);
   const notificationRef = useRef(null);
   const location = useLocation();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleNotification = () => setShowNotification(!showNotification);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      if (window.innerWidth > 768) {
+        setIsSidebarOpen(true); // Always open on desktop by default
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,47 +43,52 @@ const Layout = () => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
+  // Determine sidebar and main-content classes
+  const sidebarClass = isMobile
+    ? isSidebarOpen ? "sidebar open" : "sidebar closed"
+    : isSidebarOpen ? "sidebar open" : "sidebar closed";
+  const mainContentClass = isMobile
+    ? isSidebarOpen ? "main-content sidebar-open" : "main-content sidebar-closed"
+    : isSidebarOpen ? "main-content sidebar-open" : "main-content sidebar-closed";
+
   return (
     <div className="dashboard-container">
       {/* Sidebar */}
-      <div className={`sidebar ${isSidebarOpen ? "open" : "closed"}`}>
+      <div className={sidebarClass}>
         <div className="sidebar-header">
           <span className="sidebar-brand">Klick Inc.</span>
         </div>
         <nav className="sidebar-nav">
           <ul>
             <li>
-              <Link to="/dashboard">
+              <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'active' : ''} end>
                 <i className="bi bi-grid"></i>
                 <span>Dashboard</span>
-              </Link>
+              </NavLink>
             </li>
             <li>
-              <Link to="/projects">
+              <NavLink to="/projects" className={({ isActive }) => isActive ? 'active' : ''}>
                 <i className="bi bi-folder"></i>
                 <span>Projects</span>
-              </Link>
+              </NavLink>
             </li>
             <li>
-              <Link to="/reports">
+              <NavLink to="/reports" className={({ isActive }) => isActive ? 'active' : ''}>
                 <i className="bi bi-bar-chart"></i>
                 <span>Reports & Analytics</span>
-              </Link>
+              </NavLink>
             </li>
             <li>
-              <Link to="/budget">
+              <NavLink to="/budget" className={({ isActive }) => isActive ? 'active' : ''}>
                 <i className="bi bi-cash-stack"></i>
                 <span>Budget Tracker</span>
-              </Link>
+              </NavLink>
             </li>
             <li>
-              <Link to="/risk-management">
+              <NavLink to="/risk-management" className={({ isActive }) => isActive ? 'active' : ''}>
                 <i className="bi bi-shield-exclamation"></i>
                 <span>Risk Management</span>
-              </Link>
-            </li>
-            <li>
-              <a href="#">Test Link</a>
+              </NavLink>
             </li>
           </ul>
         </nav>
@@ -84,11 +101,15 @@ const Layout = () => {
       </div>
 
       {/* Main Content with Navbar */}
-      <main className={`main-content ${isSidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
+      <main className={mainContentClass}>
         <nav className="navbar navbar-expand-lg navbar-light bg-white shadow-sm position-relative">
           <div className="container-fluid">
-            <button className="btn btn-icon me-3" onClick={toggleSidebar}>
-              <i className="bi bi-list"></i>
+            <button 
+              className="btn btn-icon d-flex align-items-center justify-content-center" 
+              onClick={toggleSidebar}
+              aria-label="Toggle Sidebar"
+            >
+              <i className="bi bi-list fs-4"></i>
             </button>
             <div className="ms-auto position-relative" ref={notificationRef}>
               <button className="btn btn-icon position-relative" onClick={toggleNotification}>
