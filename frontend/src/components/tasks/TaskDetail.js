@@ -33,7 +33,9 @@ const TaskDetail = () => {
     assigned_to: ''
   });
   const [newComment, setNewComment] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [updateError, setUpdateError] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   const fetchExpenditures = async (taskId) => {
     setExpendituresLoading(true);
@@ -171,6 +173,26 @@ const TaskDetail = () => {
     }
   }, [id, fetchTaskDetails]);
 
+  useEffect(() => {
+    // Fetch current user
+    const fetchCurrentUser = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      try {
+        const response = await fetch('http://localhost:8000/api/user', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUser(userData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch current user:', error);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
   const fetchUsers = async () => {
     const token = localStorage.getItem('token');
     try {
@@ -191,7 +213,7 @@ const TaskDetail = () => {
     if (name === 'start_date') {
       // Check if start date is within project date range
       if (project && project.start_date && value < project.start_date) {
-        setUpdateError(`Task start date cannot be earlier than project start date (${new Date(project.start_date).toLocaleDateString()})`);
+        setUpdateError(`Task start date cannot be earlier than project start date (${new Date(project.start_date).toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric'})})`);
         return;
       }
       if (formData.due_date && value > formData.due_date) {
@@ -206,7 +228,7 @@ const TaskDetail = () => {
     } else if (name === 'due_date') {
       // Check if due date is within project date range
       if (project && project.due_date && value > project.due_date) {
-        setUpdateError(`Task due date cannot be later than project due date (${new Date(project.due_date).toLocaleDateString()})`);
+        setUpdateError(`Task due date cannot be later than project due date (${new Date(project.due_date).toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric'})})`);
         return;
       }
       if (formData.start_date && value < formData.start_date) {
@@ -279,18 +301,24 @@ const TaskDetail = () => {
     e.preventDefault();
 
     try {
-        const response = await fetch(`/api/tasks/${id}/comments`, {
+        const formData = new FormData();
+        formData.append('comment', newComment);
+        if (selectedFile) {
+            formData.append('file', selectedFile);
+        }
+
+        const response = await fetch(`http://localhost:8000/api/tasks/${id}/comments`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
             },
-            body: JSON.stringify({ comment: newComment }),
+            body: formData,
         });
 
         if (response.ok) {
-            await fetchComments(); // Re-fetch comments after submission
+            await fetchComments();
             setNewComment('');
+            setSelectedFile(null);
         } else {
             console.error('Failed to add comment');
         }
@@ -401,6 +429,24 @@ const TaskDetail = () => {
       } catch (error) {
         console.error('Error deleting expenditure:', error);
       }
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    const token = localStorage.getItem('token');
+    try {
+      const response = await fetch(`http://localhost:8000/api/task-comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        fetchComments();
+      } else {
+        alert('Failed to delete comment');
+      }
+    } catch (error) {
+      alert('Error deleting comment');
     }
   };
 
@@ -622,11 +668,11 @@ const TaskDetail = () => {
                   <ul className="list-group">                    
                     <li className="list-group-item d-flex justify-content-between align-items-center">
                       Start Date
-                      <span>{task.start_date ? new Date(task.start_date).toLocaleDateString() : 'Not set'}</span>
+                      <span>{task.start_date ? new Date(task.start_date).toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric'}) : 'Not set'}</span>
                     </li>
                     <li className="list-group-item d-flex justify-content-between align-items-center">
                       Due Date
-                      <span>{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Not set'}</span>
+                      <span>{task.due_date ? new Date(task.due_date).toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric'}) : 'Not set'}</span>
                     </li>
                   </ul>
                 </div>
@@ -635,36 +681,7 @@ const TaskDetail = () => {
           )}
         </div>
       </div>
-      
-      {/* Comments Section */}
-      <div className="card my-4">
-        <div className="card-header">
-            <h4>Comments</h4>
-        </div>
-        <ul className="list-group list-group-flush">
-            {comments.map((comment) => (
-                <li key={comment.id} className="list-group-item">
-                    <div className="d-flex justify-content-between">
-                        <strong>{comment.user.name}</strong>
-                        <span className="text-muted">{new Date(comment.created_at).toLocaleString()}</span>
-                    </div>
-                    <p>{comment.comment}</p>
-                </li>
-            ))}
-        </ul>
-        <div className="card-body">
-            <form onSubmit={handleCommentSubmit}>
-                <textarea
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    className="form-control mb-3"
-                    placeholder="Add a comment"
-                ></textarea>
-                <button type="submit" className="btn btn-primary">Submit</button>
-            </form>
-        </div>
-      </div>
-      
+            
       {/* Task Expenditures Section */}
       <div className="card">
         <div className="card-header d-flex justify-content-between align-items-center">
@@ -765,7 +782,7 @@ const TaskDetail = () => {
                   {expenditures.map(exp => (
                     <tr key={exp.id}>
                       <td>{exp.description}</td>
-                      <td>{new Date(exp.date).toLocaleDateString()}</td>
+                      <td>{new Date(exp.date).toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric'})}</td>
                       <td className="text-end text-primary fw-bold">{formatCurrency(exp.amount)}</td>
                       <td className="text-center">
                         <button 
@@ -786,6 +803,69 @@ const TaskDetail = () => {
               </table>
             </div>
           )}
+        </div>
+      </div>      
+      
+      {/* Comments Section */}
+      <div className="card my-4">
+        <div className="card-header">
+            <h4>Comments</h4>
+        </div>
+        <ul className="list-group list-group-flush">
+            {comments.map((comment) => (
+                <li key={comment.id} className="list-group-item">
+                    <div className="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>{comment.user.name}</strong>
+                            <p className="mb-1">{comment.comment}</p>
+                        </div>
+                        <div className="text-end">
+                            <span className="text-muted d-block">{new Date(comment.created_at).toLocaleString('default', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'})}</span>
+                            {currentUser && comment.user && currentUser.id === comment.user.id && (
+                                <button
+                                    className="btn btn-sm btn-danger mt-2"
+                                    onClick={() => handleDeleteComment(comment.id)}
+                                >
+                                    Delete
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    {comment.file_path && (
+                        <div className="mt-2">
+                            <a
+                                href={`http://localhost:8000/storage/${comment.file_path}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm btn-outline-primary"
+                            >
+                                <i className="bi bi-paperclip me-1"></i>
+                                {comment.file_name}
+                            </a>
+                        </div>
+                    )}
+                </li>
+            ))}
+        </ul>
+        <div className="card-body">
+            <form onSubmit={handleCommentSubmit}>
+                <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="form-control mb-3"
+                    placeholder="Add a comment"
+                ></textarea>
+                <div className="mb-3">
+                    <label htmlFor="file" className="form-label text-muted">Attach File (maximum size: 5MB)</label>
+                    <input
+                        type="file"
+                        className="form-control"
+                        id="file"
+                        onChange={(e) => setSelectedFile(e.target.files[0])}
+                    />
+                </div>
+                <button type="submit" className="btn btn-primary">Submit</button>
+            </form>
         </div>
       </div>
     </div>
