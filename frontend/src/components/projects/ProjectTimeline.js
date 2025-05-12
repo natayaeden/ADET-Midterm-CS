@@ -196,3 +196,4 @@ const ProjectTimeline = ({ project }) => {
 };
 
 export default ProjectTimeline;
+
