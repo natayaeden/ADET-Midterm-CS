@@ -13,6 +13,8 @@ class CreateTaskCommentsTable extends Migration
             $table->foreignId('task_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->text('comment');
+            $table->string('file_path')->nullable();
+            $table->string('file_name')->nullable();
             $table->timestamps();
         });
     }

@@ -1,0 +1,102 @@
+/* ProjectTimeline.css - Styles for the Gantt Chart */
+
+.gantt-container {
+  display: flex;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #374151;
+}
+
+.gantt-task-list {
+  width: 25%;
+  border-right: 1px solid #e5e7eb;
+  overflow-y: auto;
+}
+
+.gantt-task-name {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 500;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gantt-chart-container {
+  width: 75%;
+  overflow-x: auto;
+  position: relative;
+}
+
+.gantt-header {
+  padding: 10px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.gantt-months {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  height: 40px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background-color: #f9fafb;
+}
+
+.gantt-month {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-left: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.gantt-tasks {
+  position: relative;
+  min-height: 200px; /* Adjust dynamically */
+  padding: 10px 0;
+}
+
+.gantt-task {
+  position: absolute;
+  height: 32px;
+  background-color: #475ac4;
+  border-radius: 6px;
+  cursor: pointer;
+  color: white;
+  padding-left: 8px;
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background-color 0.2s;
+}
+
+.gantt-task:hover {
+  background-color: #4338ca;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .gantt-task-list {
+    width: 35%;
+  }
+  .gantt-chart-container {
+    width: 65%;
+  }
+  .gantt-month {
+    font-size: 0.75rem;
+  }
+}
