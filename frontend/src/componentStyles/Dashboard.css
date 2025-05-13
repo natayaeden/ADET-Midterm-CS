@@ -194,3 +194,111 @@
         margin-left: 0;
     }
 }
+
+/* Dashboard.css */
+.dashboard {
+  padding: 1rem;
+}
+
+.dashboard .card {
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+  overflow: hidden;
+}
+
+.dashboard .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dashboard .card-header {
+  padding: 1rem;
+  font-weight: bold;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.dashboard .display-4 {
+  font-size: 2.5rem;
+  font-weight: 700;
+}
+
+.dashboard .badge {
+  font-size: 0.75rem;
+  padding: 0.35em 0.65em;
+}
+
+.dashboard .list-group-item {
+  padding: 0.75rem 1rem;
+  transition: background-color 0.2s;
+}
+
+.dashboard .list-group-item:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.dashboard .list-group-item h6 {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: #333;
+}
+
+.dashboard .text-muted {
+  color: #6c757d !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .dashboard .row > div {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Chart container */
+.dashboard .chart-container {
+  position: relative;
+  margin: 0 auto;
+}
+
+/* Card transitions */
+.dashboard .card {
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard .card.text-white:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(-100%);
+  transition: transform 0.5s;
+}
+
+.dashboard .card.text-white:hover:after {
+  transform: translateX(0);
+}
+
+/* Custom colors for status badges */
+.dashboard .badge.bg-primary {
+  background-color: #4361ee !important;
+}
+
+.dashboard .badge.bg-success {
+  background-color: #38b000 !important;
+}
+
+.dashboard .badge.bg-info {
+  background-color: #3a86ff !important;
+}
+
+.dashboard .badge.bg-warning {
+  background-color: #ff9e00 !important;
+}
+
+.dashboard .badge.bg-danger {
+  background-color: #ef476f !important;
+}

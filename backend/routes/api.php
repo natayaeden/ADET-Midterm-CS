@@ -9,6 +9,7 @@ use App\Http\Controllers\TaskCommentController;
 use App\Http\Controllers\TaskExpenditureController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,11 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth routes
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    // Dashboard routes
+    Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
+    Route::get('/projects/recent', [DashboardController::class, 'getRecentProjects']);
+    Route::get('/tasks/upcoming', [DashboardController::class, 'getUpcomingTasks']);
 
     // User routes
     Route::get('/users', [UserController::class, 'index']);
