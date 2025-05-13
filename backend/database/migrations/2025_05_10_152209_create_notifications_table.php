@@ -12,6 +12,9 @@ class CreateNotificationsTable extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('message');
+            $table->string('type'); // Type of notification: task_assigned, task_completed, etc.
+            $table->unsignedBigInteger('related_id')->nullable(); // ID of related entity (task, project)
+            $table->json('data')->nullable(); // Additional data in JSON format
             $table->boolean('is_read')->default(false);
             $table->timestamps();
         });

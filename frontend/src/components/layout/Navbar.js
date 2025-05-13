@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../../componentStyles/Navbar.css';
+import NotificationBell from '../notifications/NotificationBell';
 
 const Navbar = ({ user, onLogout }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -78,20 +79,8 @@ const Navbar = ({ user, onLogout }) => {
             </div>
             <div className="d-flex align-items-center">
               {/* Notification Bell */}
-              <div className="dropdown me-3">
-                <button className="btn btn-link notification-btn p-2" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i className="bi bi-bell fs-4"></i>
-                  {/* <span className="notification-badge bg-danger">3</span> */}
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
-                  <li className="dropdown-header">Notifications</li>
-                  <li><hr className="dropdown-divider my-1" /></li>
-                  <li><a className="dropdown-item px-3 py-2" href="#">New task assigned to you</a></li>
-                  <li><a className="dropdown-item px-3 py-2" href="#">Project deadline approaching</a></li>
-                  <li><a className="dropdown-item px-3 py-2" href="#">Budget alert: 80% reached</a></li>
-                  <li><hr className="dropdown-divider my-1" /></li>
-                  <li><a className="dropdown-item px-3 py-2 text-center text-muted" href="#">See all notifications</a></li>
-                </ul>
+              <div className="me-3">
+                <NotificationBell />
               </div>
               {/* User Avatar & Name*/}
               <div className="dropdown">

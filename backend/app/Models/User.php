@@ -48,6 +48,16 @@ class User extends Authenticatable
         return $this->hasMany(TaskComment::class);
     }
 
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function unreadNotificationsCount()
+    {
+        return $this->notifications()->where('is_read', false)->count();
+    }
+
     /**
      * Check if the user is a manager
      *

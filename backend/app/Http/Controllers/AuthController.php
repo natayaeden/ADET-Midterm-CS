@@ -70,7 +70,10 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
-        return response()->json($request->user());
+        $user = $request->user();
+        $user->unread_notifications_count = $user->notifications()->where('is_read', false)->count();
+        
+        return response()->json($user);
     }
     
 }

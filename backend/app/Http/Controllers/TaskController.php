@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\Project;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
@@ -66,6 +68,11 @@ class TaskController extends Controller
         $task = Task::create($request->all());
         $task->load(['assignedTo:id,name', 'project:id,name']);
 
+        // Create a notification for the assigned user if any
+        if ($task->assigned_to) {
+            $this->notifyTaskAssigned($task);
+        }
+
         return response()->json($task, 201);
     }
 
@@ -110,8 +117,25 @@ class TaskController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        // Check if assigned_to has changed
+        $assignedToChanged = $request->has('assigned_to') && $task->assigned_to != $request->assigned_to;
+        
+        // Check if status has changed to 'Completed'
+        $statusChangedToCompleted = $request->has('status') && 
+                                   $task->status != 'Completed' && 
+                                   $request->status == 'Completed';
+
         $task->update($request->all());
         $task->load(['assignedTo:id,name', 'project:id,name']);
+
+        // Create notifications based on changes
+        if ($assignedToChanged && $task->assigned_to) {
+            $this->notifyTaskAssigned($task);
+        }
+        
+        if ($statusChangedToCompleted) {
+            $this->notifyTaskCompleted($task);
+        }
 
         return response()->json($task);
     }
@@ -135,4 +159,62 @@ class TaskController extends Controller
         return response()->json($tasks);
     }
     
+    /**
+     * Create a notification for task assignment
+     */
+    private function notifyTaskAssigned(Task $task)
+    {
+        // Only notify if task is assigned to someone
+        if (!$task->assigned_to) {
+            return;
+        }
+        
+        $user = User::find($task->assigned_to);
+        $project = Project::find($task->project_id);
+        
+        if (!$user || !$project) {
+            return;
+        }
+        
+        Notification::create([
+            'user_id' => $user->id,
+            'type' => 'task_assigned',
+            'related_id' => $task->id,
+            'message' => "You have been assigned to the task: {$task->title}",
+            'data' => [
+                'task_id' => $task->id,
+                'task_title' => $task->title,
+                'project_id' => $project->id,
+                'project_name' => $project->name,
+                'due_date' => $task->due_date
+            ]
+        ]);
+    }
+    
+    /**
+     * Create a notification when a task is completed
+     */
+    private function notifyTaskCompleted(Task $task)
+    {
+        $project = Project::find($task->project_id);
+        
+        if (!$project || !$project->user_id) {
+            return;
+        }
+        
+        // Notify project manager
+        Notification::create([
+            'user_id' => $project->user_id,
+            'type' => 'task_completed',
+            'related_id' => $task->id,
+            'message' => "Task '{$task->title}' has been completed",
+            'data' => [
+                'task_id' => $task->id,
+                'task_title' => $task->title,
+                'project_id' => $project->id,
+                'project_name' => $project->name,
+                'completed_at' => now()
+            ]
+        ]);
+    }
 }
