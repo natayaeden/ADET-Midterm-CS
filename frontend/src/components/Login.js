@@ -36,7 +36,7 @@ const Login = () => {
                 localStorage.setItem('auth_token', data.token);
                 navigate("/dashboard");
             } else {
-                setError(data.message || "Invalid username or password!");
+                setError(data.message || "Invalid email or password!");
             }
         } catch (err) {
             setError("An error occurred during login.");
