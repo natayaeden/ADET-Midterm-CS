@@ -14,8 +14,13 @@ const ProjectDetail = () => {
   const [showTimelineModal, setShowTimelineModal] = useState(false);
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  
+  // Check if user is a manager (can edit project details)
+  const isManager = currentUser?.role === 'manager';
 
   useEffect(() => {
+    fetchCurrentUser();
     const loadData = async () => {
       await fetchProject();
       await fetchStatistics();
@@ -33,6 +38,26 @@ const ProjectDetail = () => {
       }));
     }
   }, [project, statistics?.total_expenditure]);
+  
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch current user');
+      }
+
+      const data = await response.json();
+      setCurrentUser(data);
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+    }
+  };
 
   const fetchProject = async () => {
     try {
@@ -138,6 +163,13 @@ const ProjectDetail = () => {
 
   const handleFileUpload = async (e) => {
     e.preventDefault();
+    
+    // Only managers can upload files
+    if (!isManager) {
+      setError('You do not have permission to upload files. Only managers can upload files.');
+      return;
+    }
+    
     console.log("File upload triggered");
     console.log("Selected file:", selectedFile);
 
@@ -202,7 +234,11 @@ const ProjectDetail = () => {
   }
 
   if (error) {
-    return <Alert variant="danger">{error}</Alert>;
+    return (
+      <Alert variant="danger" dismissible onClose={() => setError('')}>
+        {error}
+      </Alert>
+    );
   }
 
   if (!project) {
@@ -312,10 +348,12 @@ const ProjectDetail = () => {
                 <div className="card-body text-center">
                   <h5 className="card-title">Total Budget</h5>
                   <h2 className="text-primary">{formatCurrency(project?.budget ?? 0)}</h2>
-                  <Button variant="outline-primary" className="btn-sm mt-1">
-                    <i className="bi bi-pencil-square me-1"></i>
-                    Edit
-                  </Button>
+                  {isManager && (
+                    <Button variant="outline-primary" className="btn-sm mt-1">
+                      <i className="bi bi-pencil-square me-1"></i>
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </div>
             </Col>
@@ -403,45 +441,59 @@ const ProjectDetail = () => {
       {/* File Upload Section */}
       <Card className="mt-4">
         <Card.Header className="bg-light">
-          <h3 className="mb-0">File Upload</h3>
+          <h3 className="mb-0">Project Files</h3>
         </Card.Header>
         <Card.Body>
-          <Form onSubmit={handleFileUpload}>
-            <Form.Group controlId="fileUpload">
-              <Form.Label>Upload File</Form.Label>
-              <Form.Control
-                type="file"
-                onChange={(e) => setSelectedFile(e.target.files[0])}
-              />
-            </Form.Group>
-            <Button type="submit" className="mt-2">Upload</Button>
-          </Form>
+          {isManager && (
+            <Form onSubmit={handleFileUpload} className="mb-4">
+              <Form.Group controlId="fileUpload">
+                <Form.Label>Upload New File</Form.Label>
+                <Form.Control
+                  type="file"
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                />
+              </Form.Group>
+              <Button type="submit" className="mt-2">Upload</Button>
+            </Form>
+          )}
+          
+          {!isManager && (
+            <Alert variant="info" className="mb-4">
+              <i className="bi bi-info-circle me-2"></i>
+              You are viewing this project as a member. Only managers can upload files to the project.
+            </Alert>
+          )}
 
-          <h3 className="mt-4">Shared Files</h3>
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>File Name</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {files.map((file) => (
-                <tr key={file.id}>
-                  <td>{file.file_name}</td>
-                  <td>
-                    <a
-                      href={`http://localhost:8000/storage/${file.file_path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Download
-                    </a>
-                  </td>
+          <h5 className="mt-4">Shared Files</h5>
+          {files.length === 0 ? (
+            <p className="text-muted">No files have been uploaded to this project yet.</p>
+          ) : (
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>File Name</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {files.map((file) => (
+                  <tr key={file.id}>
+                    <td>{file.file_name}</td>
+                    <td>
+                      <a
+                        href={`http://localhost:8000/storage/${file.file_path}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-primary"
+                      >
+                        <i className="bi bi-download me-1"></i> Download
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
         </Card.Body>
       </Card>
     </div>

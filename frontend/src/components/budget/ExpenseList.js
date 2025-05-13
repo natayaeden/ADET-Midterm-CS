@@ -1,7 +1,7 @@
 // components/budget/ExpenseList.js
 import React from 'react';
 
-const ExpenseList = ({ expenses, onDeleteExpense }) => {
+const ExpenseList = ({ expenses, onDeleteExpense, isManager }) => {
   // Helper function to get the appropriate icon for each category
   const getCategoryIcon = (category) => {
     switch (category) {
@@ -53,7 +53,7 @@ const ExpenseList = ({ expenses, onDeleteExpense }) => {
                 <th>Category</th>
                 <th>Date</th>
                 <th>Amount</th>
-                <th></th>
+                {isManager && <th></th>}
               </tr>
             </thead>
             <tbody>
@@ -68,15 +68,17 @@ const ExpenseList = ({ expenses, onDeleteExpense }) => {
                   </td>
                   <td>{formatDate(expense.date)}</td>
                   <td className="text-end">${parseFloat(expense.amount).toFixed(2)}</td>
-                  <td className="text-end">
-                    <button 
-                      className="btn btn-sm btn-outline-danger" 
-                      onClick={() => onDeleteExpense(expense.id)}
-                      title="Delete expense"
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
-                  </td>
+                  {isManager && (
+                    <td className="text-end">
+                      <button 
+                        className="btn btn-sm btn-outline-danger" 
+                        onClick={() => onDeleteExpense(expense.id)}
+                        title="Delete expense"
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

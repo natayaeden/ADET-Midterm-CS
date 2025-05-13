@@ -22,7 +22,11 @@ const Projects = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [currentUser, setCurrentUser] = useState(null);
+  const [userProjects, setUserProjects] = useState([]);
   const navigate = useNavigate();
+
+  // Check if user is a manager (can create/edit/delete projects)
+  const isManager = currentUser?.role === 'manager';
 
   useEffect(() => {
     fetchProjects();
@@ -94,8 +98,33 @@ const Projects = () => {
 
       const data = await response.json();
       setCurrentUser(data);
+      
+      // If user is a member, fetch projects they are assigned to
+      if (data.role === 'member') {
+        fetchUserProjects(data.id);
+      }
     } catch (err) {
       console.error('Error fetching current user:', err);
+    }
+  };
+  
+  const fetchUserProjects = async (userId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:8000/api/user-projects`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user projects');
+      }
+
+      const data = await response.json();
+      setUserProjects(data);
+    } catch (err) {
+      console.error('Error fetching user projects:', err);
     }
   };
 
@@ -148,6 +177,12 @@ const Projects = () => {
   };
 
   const handleShowModal = () => {
+    // Only managers can create new projects
+    if (!isManager) {
+      setError('You do not have permission to create new projects. Only managers can create projects.');
+      return;
+    }
+    
     setCurrentProject({
       name: '',
       description: '',
@@ -164,6 +199,13 @@ const Projects = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Only managers can create/edit projects
+    if (!isManager) {
+      setError('You do not have permission to modify projects.');
+      handleCloseModal();
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
@@ -212,6 +254,12 @@ const Projects = () => {
   };
 
   const handleEdit = (project) => {
+    // Only managers can edit projects
+    if (!isManager) {
+      setError('You do not have permission to edit projects. Only managers can modify projects.');
+      return;
+    }
+    
     setCurrentProject({
       id: project.id,
       name: project.name,
@@ -228,6 +276,12 @@ const Projects = () => {
   };
 
   const handleDelete = async (id) => {
+    // Only managers can delete projects
+    if (!isManager) {
+      setError('You do not have permission to delete projects. Only managers can delete projects.');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to delete this project?')) {
       return;
     }
@@ -252,6 +306,12 @@ const Projects = () => {
   };
 
   const handleCancel = async (project) => {
+    // Only managers can cancel projects
+    if (!isManager) {
+      setError('You do not have permission to cancel projects. Only managers can cancel projects.');
+      return;
+    }
+    
     if (!window.confirm('Are you sure you want to cancel this project?')) {
       return;
     }
@@ -373,17 +433,21 @@ const Projects = () => {
 
   // Filter and search projects
   const filteredProjects = projects.filter(project => {
-  const isOwnedByUser = currentUser && project.user_id === currentUser.id;
+    // For managers: Show all projects they created
+    // For members: Show only projects they are part of
+    const isVisible = isManager 
+      ? currentUser && project.user_id === currentUser.id
+      : userProjects.some(p => p.id === project.id);
 
-  const matchesSearch =
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (project.description &&
-      project.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesSearch =
+      project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (project.description &&
+        project.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const matchesStatus = filterStatus === '' || project.status === filterStatus;
+    const matchesStatus = filterStatus === '' || project.status === filterStatus;
 
-  return isOwnedByUser && matchesSearch && matchesStatus;
-});
+    return isVisible && matchesSearch && matchesStatus;
+  });
 
   if (loading) {
     return (
@@ -404,13 +468,15 @@ const Projects = () => {
               <p className="text-muted mb-0">Manage and track all your projects</p>
             </Col>
             <Col xs="auto">
-              <Button 
-                variant="primary" 
-                onClick={handleShowModal}
-                className="fw-semibold"
-              >
-                <i className="bi bi-plus-circle me-2"></i>New Project
-              </Button>
+              {isManager && (
+                <Button 
+                  variant="primary" 
+                  onClick={handleShowModal}
+                  className="fw-semibold"
+                >
+                  <i className="bi bi-plus-circle me-2"></i>New Project
+                </Button>
+              )}
             </Col>
           </Row>
 
@@ -454,6 +520,12 @@ const Projects = () => {
             <Alert variant="danger" className="m-3">
               <i className="bi bi-exclamation-triangle-fill me-2"></i>
               {error}
+              <Button 
+                variant="close" 
+                className="float-end" 
+                onClick={() => setError('')}
+                aria-label="Close"
+              />
             </Alert>
           )}
 
@@ -462,7 +534,7 @@ const Projects = () => {
               <i className="bi bi-folder text-muted fs-1"></i>
               <p className="mt-3 mb-0">
                 {projects.length === 0 
-                  ? 'No projects found. Create your first project to get started!' 
+                  ? (isManager ? 'No projects found. Create your first project to get started!' : 'No projects found. You are not assigned to any projects yet.') 
                   : 'No projects match your search criteria.'}
               </p>
             </div>
@@ -476,7 +548,7 @@ const Projects = () => {
                     <th>Status</th>
                     <th>Budget</th>
                     <th>Due Date</th>
-                    <th className="text-center">Actions</th>
+                    {isManager && <th className="text-center">Actions</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -522,34 +594,36 @@ const Projects = () => {
                           )}
                         </div>
                       </td>
-                      <td className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
-                        {project.status !== 'Cancelled' && (
-                          <>
-                            <Button
-                              variant="light"
-                              size="sm"
-                              className="me-2 border"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEdit(project);
-                              }}
-                            >
-                              <i className="bi bi-pencil"></i>
-                            </Button>
-                            <Button
-                              variant="light"
-                              size="sm"
-                              className="border text-danger"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDelete(project.id);
-                              }}
-                            >
-                              <i className="bi bi-trash"></i>
-                            </Button>
-                          </>
-                        )}
-                      </td>
+                      {isManager && (
+                        <td className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
+                          {project.status !== 'Cancelled' && (
+                            <>
+                              <Button
+                                variant="light"
+                                size="sm"
+                                className="me-2 border"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(project);
+                                }}
+                              >
+                                <i className="bi bi-pencil"></i>
+                              </Button>
+                              <Button
+                                variant="light"
+                                size="sm"
+                                className="border text-danger"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(project.id);
+                                }}
+                              >
+                                <i className="bi bi-trash"></i>
+                              </Button>
+                            </>
+                          )}
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
