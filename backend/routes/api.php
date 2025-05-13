@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // User routes
     Route::get('/users', [UserController::class, 'index']);
+    Route::get('/user-projects', [UserController::class, 'getUserProjects']);
     
     // Project routes
     Route::apiResource('projects', ProjectController::class);

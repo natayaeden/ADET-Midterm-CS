@@ -6,9 +6,24 @@ use App\Models\Task;
 use App\Models\Project;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
+    // This method checks if the current user can modify the task
+    private function canModifyTask(Task $task)
+    {
+        $user = Auth::user();
+        
+        // If user is a manager, they can modify any task
+        if ($user->role === 'manager') {
+            return true;
+        }
+        
+        // If user is a member, they can only modify tasks assigned to them
+        return $user->id === $task->assigned_to;
+    }
+
     public function index(Request $request)
     {
         $query = Task::with(['assignedTo:id,name', 'project:id,name']);
@@ -72,6 +87,13 @@ class TaskController extends Controller
 
     public function update(Request $request, Task $task)
     {
+        // Check if the user has permission to update this task
+        if (!$this->canModifyTask($task)) {
+            return response()->json([
+                'message' => 'You do not have permission to update this task. Only managers or the assigned member can update tasks.'
+            ], 403);
+        }
+        
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
@@ -96,6 +118,13 @@ class TaskController extends Controller
 
     public function destroy(Task $task)
     {
+        // Check if the user has permission to delete this task
+        if (!$this->canModifyTask($task)) {
+            return response()->json([
+                'message' => 'You do not have permission to delete this task. Only managers or the assigned member can delete tasks.'
+            ], 403);
+        }
+        
         $task->delete();
         return response()->json(null, 204);
     }

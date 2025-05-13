@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Alert } from 'react-bootstrap';
 
 const NewTask = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [project, setProject] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -17,10 +21,37 @@ const NewTask = () => {
     estimated_hours: ''
   });
 
+  // Check if user is a manager
+  const isManager = currentUser?.role === 'manager';
+
   useEffect(() => {
+    fetchCurrentUser();
     fetchUsers();
     fetchProject();
   }, []);
+  
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch current user');
+      }
+
+      const data = await response.json();
+      setCurrentUser(data);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+      setError('Error loading user information');
+      setLoading(false);
+    }
+  };
 
   const fetchProject = async () => {
     const token = localStorage.getItem('token');
@@ -43,6 +74,7 @@ const NewTask = () => {
       }));
     } catch (error) {
       console.error('Failed to load project:', error);
+      setError('Failed to load project details');
     }
   };
 
@@ -131,6 +163,24 @@ const NewTask = () => {
       console.error('Error creating task:', error);
     }
   };
+
+  if (loading) {
+    return <div className="text-center mt-5">Loading...</div>;
+  }
+
+  if (!isManager) {
+    return (
+      <div className="container mt-4">
+        <Alert variant="danger">
+          <h4>Access Denied</h4>
+          <p>Only managers can create new tasks. Members can only view projects and tasks they are assigned to.</p>
+          <button className="btn btn-primary" onClick={() => navigate(`/projects/${projectId}/tasks`)}>
+            Back to Tasks
+          </button>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="container mt-4">

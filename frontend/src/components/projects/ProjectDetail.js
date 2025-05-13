@@ -15,20 +15,42 @@ const ProjectDetail = () => {
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [userProjects, setUserProjects] = useState([]);
+  const [hasAccess, setHasAccess] = useState(false);
   
   // Check if user is a manager (can edit project details)
   const isManager = currentUser?.role === 'manager';
 
   useEffect(() => {
     fetchCurrentUser();
-    const loadData = async () => {
-      await fetchProject();
-      await fetchStatistics();
-      await fetchTaskExpenditures();
-      await fetchFiles();
-    };
-    loadData();
-  }, [id]);
+  }, []);
+  
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'manager') {
+        setHasAccess(true);
+        loadData();
+      } else {
+        // For members, check if they have access to this project
+        fetchUserProjects();
+      }
+    }
+  }, [currentUser, id]);
+  
+  useEffect(() => {
+    // Check if current project is in userProjects
+    if (!isManager && userProjects.length > 0) {
+      const projectExists = userProjects.some(p => p.id == id);
+      setHasAccess(projectExists);
+      
+      if (projectExists) {
+        loadData();
+      } else {
+        setLoading(false);
+        setError('You do not have access to this project. You can only view projects where you have assigned tasks.');
+      }
+    }
+  }, [userProjects, id]);
 
   useEffect(() => {
     if (project && statistics) {
@@ -38,6 +60,13 @@ const ProjectDetail = () => {
       }));
     }
   }, [project, statistics?.total_expenditure]);
+
+  const loadData = async () => {
+    await fetchProject();
+    await fetchStatistics();
+    await fetchTaskExpenditures();
+    await fetchFiles();
+  };
   
   const fetchCurrentUser = async () => {
     try {
@@ -56,6 +85,30 @@ const ProjectDetail = () => {
       setCurrentUser(data);
     } catch (err) {
       console.error('Error fetching current user:', err);
+      setError('Error loading user information');
+      setLoading(false);
+    }
+  };
+  
+  const fetchUserProjects = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/user-projects', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user projects');
+      }
+
+      const data = await response.json();
+      setUserProjects(data);
+    } catch (err) {
+      console.error('Error fetching user projects:', err);
+      setError('Error loading project access information');
+      setLoading(false);
     }
   };
 
@@ -241,8 +294,20 @@ const ProjectDetail = () => {
     );
   }
 
-  if (!project) {
+  if (!project && !error) {
     return <Alert variant="warning">Project not found</Alert>;
+  }
+  
+  if (!hasAccess) {
+    return (
+      <Alert variant="danger">
+        <h4>Access Denied</h4>
+        <p>You don't have access to this project. Members can only view projects where they have assigned tasks.</p>
+        <Button variant="primary" onClick={() => navigate('/projects')}>
+          Back to Projects
+        </Button>
+      </Alert>
+    );
   }
 
   return (

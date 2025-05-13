@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Project;
+use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -114,6 +116,34 @@ class UserController extends Controller
         return response()->json([
             'message' => 'User deleted successfully'
         ]);
+    }
+    
+    /**
+     * Get projects where the authenticated user has assigned tasks.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserProjects(Request $request)
+    {
+        $user = $request->user();
+        
+        // If user is a manager, return all their projects
+        if ($user->role === 'manager') {
+            $projects = Project::where('user_id', $user->id)->with('manager:id,name')->get();
+            return response()->json($projects);
+        }
+        
+        // For members, only return projects where they have assigned tasks
+        $assignedTasksProjects = Task::where('assigned_to', $user->id)
+            ->pluck('project_id')
+            ->unique();
+        
+        $projects = Project::whereIn('id', $assignedTasksProjects)
+            ->with('manager:id,name')
+            ->get();
+        
+        return response()->json($projects);
     }
     
     /**

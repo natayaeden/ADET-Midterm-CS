@@ -11,15 +11,91 @@ const Tasks = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState({});
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userProjects, setUserProjects] = useState([]);
+  const [hasAccess, setHasAccess] = useState(false);
+  
+  // Check if user is a manager
+  const isManager = currentUser?.role === 'manager';
 
-  // Fetch users and tasks whenever projectId changes
+  // First load current user
   useEffect(() => {
-    const loadData = async () => {
-      await fetchUsers();
-      await fetchProjectAndTasks();
-    };
-    loadData();
-  }, [projectId]);
+    fetchCurrentUser();
+  }, []);
+  
+  // Then check access and load data if needed
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'manager') {
+        setHasAccess(true);
+        loadData();
+      } else {
+        // For members, check if they have access to this project
+        fetchUserProjects();
+      }
+    }
+  }, [currentUser, projectId]);
+  
+  useEffect(() => {
+    // Check if current project is in userProjects for members
+    if (!isManager && userProjects.length > 0) {
+      const projectExists = userProjects.some(p => p.id == projectId);
+      setHasAccess(projectExists);
+      
+      if (projectExists) {
+        loadData();
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [userProjects, projectId]);
+
+  const loadData = async () => {
+    await fetchUsers();
+    await fetchProjectAndTasks();
+  };
+  
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/user', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch current user');
+      }
+
+      const data = await response.json();
+      setCurrentUser(data);
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+      setLoading(false);
+    }
+  };
+  
+  const fetchUserProjects = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:8000/api/user-projects', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch user projects');
+      }
+
+      const data = await response.json();
+      setUserProjects(data);
+    } catch (err) {
+      console.error('Error fetching user projects:', err);
+      setLoading(false);
+    }
+  };
 
   // Load all users into a map { id: name }
   const fetchUsers = async () => {
@@ -79,6 +155,12 @@ const Tasks = () => {
 
   // Update status via PATCH
   const handleStatusChange = async (taskId, newStatus) => {
+    // Only managers can change task status
+    if (!isManager) {
+      alert('Only managers can change task status.');
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`http://localhost:8000/api/tasks/${taskId}`, {
@@ -162,6 +244,20 @@ const Tasks = () => {
       </div>
     );
   }
+  
+  if (!hasAccess) {
+    return (
+      <Container fluid className="px-4 py-4">
+        <Alert variant="danger">
+          <h4>Access Denied</h4>
+          <p>You don't have access to this project. Members can only view projects where they have assigned tasks.</p>
+          <Button variant="primary" onClick={() => navigate('/projects')}>
+            Back to Projects
+          </Button>
+        </Alert>
+      </Container>
+    );
+  }
 
   const filteredTasks = getFilteredTasks();
 
@@ -174,19 +270,21 @@ const Tasks = () => {
               <Button variant="outline-secondary" className="mb-3" onClick={() => navigate(`/projects/${projectId}`)}>
                 <i className="bi bi-arrow-left me-2"></i> Back to Project
               </Button>
-              <h2 className="mb-1 fw-bold">{project?.title || 'Project'}: Tasks</h2>
+              <h2 className="mb-1 fw-bold">{project?.name || 'Project'}: Tasks</h2>
               <nav aria-label="breadcrumb">
                 <ol className="breadcrumb mb-0">
                   <li className="breadcrumb-item"><Link to="/projects" className="text-decoration-none">Projects</Link></li>
-                  <li className="breadcrumb-item"><Link to={`/projects/${projectId}`} className="text-decoration-none">{project?.title}</Link></li>
+                  <li className="breadcrumb-item"><Link to={`/projects/${projectId}`} className="text-decoration-none">{project?.name}</Link></li>
                   <li className="breadcrumb-item active">Tasks</li>
                 </ol>
               </nav>
             </Col>
             <Col xs="auto">
-              <Link to={`/projects/${projectId}/tasks/new`} className="btn btn-primary">
-                <i className="bi bi-plus-circle me-2"></i>New Task
-              </Link>
+              {isManager && (
+                <Link to={`/projects/${projectId}/tasks/new`} className="btn btn-primary">
+                  <i className="bi bi-plus-circle me-2"></i>New Task
+                </Link>
+              )}
             </Col>
           </Row>
 
@@ -238,16 +336,22 @@ const Tasks = () => {
                         </div>
                       </div>
                       <div className="d-flex align-items-center">
-                        <Dropdown className="me-2">
-                          <Dropdown.Toggle variant={getStatusBadgeVariant(task.status)} size="sm">
+                        {isManager ? (
+                          <Dropdown className="me-2">
+                            <Dropdown.Toggle variant={getStatusBadgeVariant(task.status)} size="sm">
+                              {getStatusText(task.status)}
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                              {['pending','in_progress','completed'].map(s => (
+                                <Dropdown.Item key={s} onClick={() => handleStatusChange(task.id, s)}>{getStatusText(s)}</Dropdown.Item>
+                              ))}
+                            </Dropdown.Menu>
+                          </Dropdown>
+                        ) : (
+                          <Badge bg={getStatusBadgeVariant(task.status)} className="me-2">
                             {getStatusText(task.status)}
-                          </Dropdown.Toggle>
-                          <Dropdown.Menu>
-                            {['pending','in_progress','completed'].map(s => (
-                              <Dropdown.Item key={s} onClick={() => handleStatusChange(task.id, s)}>{getStatusText(s)}</Dropdown.Item>
-                            ))}
-                          </Dropdown.Menu>
-                        </Dropdown>
+                          </Badge>
+                        )}
                         <Link to={`/tasks/${task.id}`} className="btn btn-sm btn-outline-primary"><i className="bi bi-eye"></i></Link>
                       </div>
                     </div>

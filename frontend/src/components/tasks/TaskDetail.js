@@ -245,6 +245,13 @@ const TaskDetail = () => {
     e.preventDefault();
     setUpdateError(null);
     
+    // Check if user has permission to edit this task
+    if (!canModifyTask()) {
+      setUpdateError('You do not have permission to edit this task. Only managers or the assigned member can edit tasks.');
+      setIsEditing(false);
+      return;
+    }
+    
     try {
       // Prepare the data to send to the API
       const dataToSubmit = {
@@ -328,6 +335,12 @@ const TaskDetail = () => {
 };
 
   const handleDelete = async () => {
+    // Check if user has permission to delete this task
+    if (!canModifyTask()) {
+      alert('You do not have permission to delete this task. Only managers or the assigned member can delete tasks.');
+      return;
+    }
+    
     const confirm = window.confirm('Are you sure you want to delete this task?');
     
     if (confirm) {
@@ -368,6 +381,12 @@ const TaskDetail = () => {
   const handleAddExpenditure = async (e) => {
     e.preventDefault();
     if (!newExpenditure.amount || !newExpenditure.description) return;
+    
+    // Check if user has permission to add expenditures
+    if (!canModifyTask()) {
+      alert('You do not have permission to add expenditures to this task. Only managers or the assigned member can add expenditures.');
+      return;
+    }
     
     try {
       const token = localStorage.getItem('token');
@@ -410,6 +429,12 @@ const TaskDetail = () => {
 
   // Delete an expenditure
   const handleDeleteExpenditure = async (expenditureId) => {
+    // Check if user has permission to delete expenditures
+    if (!canModifyTask()) {
+      alert('You do not have permission to delete expenditures from this task. Only managers or the assigned member can delete expenditures.');
+      return;
+    }
+    
     const confirm = window.confirm('Are you sure you want to delete this expenditure?');
     
     if (confirm) {
@@ -448,6 +473,31 @@ const TaskDetail = () => {
     } catch (error) {
       alert('Error deleting comment');
     }
+  };
+
+  // Check if user is a manager
+  const isManager = currentUser?.role === 'manager';
+  
+  // Check if current user is assigned to this task
+  const isAssignedToTask = () => {
+    if (!currentUser || !task) return false;
+    
+    // If user is a manager, they always have access
+    if (isManager) return true;
+    
+    // For members, check if they are assigned to this task
+    const taskAssigneeId = typeof task.assigned_to === 'object' && task.assigned_to 
+      ? task.assigned_to.id
+      : typeof task.assigned_to === 'number' || (task.assigned_to && !isNaN(Number(task.assigned_to)))
+        ? Number(task.assigned_to)
+        : null;
+    
+    return taskAssigneeId === currentUser.id;
+  };
+  
+  // Check if the current user can edit/delete this task
+  const canModifyTask = () => {
+    return isManager || isAssignedToTask();
   };
 
   if (loading) {
@@ -500,7 +550,7 @@ const TaskDetail = () => {
                   Save Changes
                 </button>
               </>
-            ) : (
+            ) : canModifyTask() ? (
               <>
                 <button onClick={() => setIsEditing(true)} className="btn btn-outline-primary me-2">
                   <i className="bi bi-pencil me-1"></i>Edit
@@ -509,6 +559,10 @@ const TaskDetail = () => {
                   <i className="bi bi-trash me-1"></i>Delete
                 </button>
               </>
+            ) : (
+              <div className="text-muted">
+                <small><i className="bi bi-info-circle me-1"></i>You can only view this task</small>
+              </div>
             )}
           </div>
         </div>
@@ -698,63 +752,72 @@ const TaskDetail = () => {
         </div>
         
         <div className="card-body">
-          {/* Add Expenditure Form */}
-          <form onSubmit={handleAddExpenditure} className="mb-4">
-            <div className="row g-3">
-              <div className="col-md-3">
-                <div className="form-group">
-                  <label htmlFor="amount" className="form-label">Amount (₱)</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    id="amount"
-                    name="amount"
-                    value={newExpenditure.amount}
-                    onChange={handleExpenditureChange}
-                    placeholder="Enter amount"
-                    required
-                  />
+          {/* Add Expenditure Form - Only show if user can modify task */}
+          {canModifyTask() && (
+            <form onSubmit={handleAddExpenditure} className="mb-4">
+              <div className="row g-3">
+                <div className="col-md-3">
+                  <div className="form-group">
+                    <label htmlFor="amount" className="form-label">Amount (₱)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      id="amount"
+                      name="amount"
+                      value={newExpenditure.amount}
+                      onChange={handleExpenditureChange}
+                      placeholder="Enter amount"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="col-md-6">
+                  <div className="form-group">
+                    <label htmlFor="expDescription" className="form-label">Description</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="expDescription"
+                      name="description"
+                      value={newExpenditure.description}
+                      onChange={handleExpenditureChange}
+                      placeholder="Enter expense description"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="col-md-3">
+                  <div className="form-group">
+                    <label htmlFor="date" className="form-label">Date</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      id="date"
+                      name="date"
+                      value={newExpenditure.date}
+                      onChange={handleExpenditureChange}
+                    />
+                  </div>
+                </div>
+                <div className="col-12">
+                  <button 
+                    type="submit" 
+                    className="btn btn-primary float-end"
+                  >
+                    <i className="bi bi-plus-circle me-1"></i>
+                    Add Expenditure
+                  </button>
                 </div>
               </div>
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label htmlFor="expDescription" className="form-label">Description</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="expDescription"
-                    name="description"
-                    value={newExpenditure.description}
-                    onChange={handleExpenditureChange}
-                    placeholder="Enter expense description"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="col-md-3">
-                <div className="form-group">
-                  <label htmlFor="date" className="form-label">Date</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    id="date"
-                    name="date"
-                    value={newExpenditure.date}
-                    onChange={handleExpenditureChange}
-                  />
-                </div>
-              </div>
-              <div className="col-12">
-                <button 
-                  type="submit" 
-                  className="btn btn-primary float-end"
-                >
-                  <i className="bi bi-plus-circle me-1"></i>
-                  Add Expenditure
-                </button>
-              </div>
+            </form>
+          )}
+          
+          {!canModifyTask() && (
+            <div className="alert alert-info mb-4">
+              <i className="bi bi-info-circle me-2"></i>
+              You can only view expenditures for this task. Only the task assignee or a manager can add/delete expenditures.
             </div>
-          </form>
+          )}
 
           {/* Expenditures List */}
           {expendituresLoading ? (
@@ -785,12 +848,14 @@ const TaskDetail = () => {
                       <td>{new Date(exp.date).toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric'})}</td>
                       <td className="text-end text-primary fw-bold">{formatCurrency(exp.amount)}</td>
                       <td className="text-center">
-                        <button 
-                          onClick={() => handleDeleteExpenditure(exp.id)} 
-                          className="btn btn-sm btn-outline-danger"
-                        >
-                          <i className="bi bi-trash"></i>
-                        </button>
+                        {canModifyTask() && (
+                          <button 
+                            onClick={() => handleDeleteExpenditure(exp.id)} 
+                            className="btn btn-sm btn-outline-danger"
+                          >
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

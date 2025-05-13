@@ -29,10 +29,21 @@ const Projects = () => {
   const isManager = currentUser?.role === 'manager';
 
   useEffect(() => {
-    fetchProjects();
-    fetchProjectManagers();
     fetchCurrentUser();
+    fetchProjectManagers();
   }, []);
+  
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === 'manager') {
+        // Managers see all projects
+        fetchProjects();
+      } else {
+        // Members only see projects they have tasks in
+        fetchUserProjects();
+      }
+    }
+  }, [currentUser]);
 
   const fetchProjects = async () => {
     try {
@@ -98,20 +109,16 @@ const Projects = () => {
 
       const data = await response.json();
       setCurrentUser(data);
-      
-      // If user is a member, fetch projects they are assigned to
-      if (data.role === 'member') {
-        fetchUserProjects(data.id);
-      }
     } catch (err) {
       console.error('Error fetching current user:', err);
     }
   };
   
-  const fetchUserProjects = async (userId) => {
+  const fetchUserProjects = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/user-projects`, {
+      const response = await fetch('http://localhost:8000/api/user-projects', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -122,9 +129,12 @@ const Projects = () => {
       }
 
       const data = await response.json();
-      setUserProjects(data);
+      setProjects(data); // Set projects directly from user-projects endpoint
     } catch (err) {
       console.error('Error fetching user projects:', err);
+      setError('Error loading your projects. You will only see projects where you have assigned tasks.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -433,11 +443,11 @@ const Projects = () => {
 
   // Filter and search projects
   const filteredProjects = projects.filter(project => {
-    // For managers: Show all projects they created
-    // For members: Show only projects they are part of
+    // For managers: Show projects they created
+    // For members: Projects are already filtered by the API
     const isVisible = isManager 
       ? currentUser && project.user_id === currentUser.id
-      : userProjects.some(p => p.id === project.id);
+      : true;
 
     const matchesSearch =
       project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
